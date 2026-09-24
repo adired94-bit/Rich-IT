@@ -79,6 +79,7 @@ create table services (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+create unique index services_sku_idx on services (sku);
 create index services_category_idx on services (category);
 create index services_active_idx on services (active);
 create trigger services_updated_at before update on services for each row execute function set_updated_at();

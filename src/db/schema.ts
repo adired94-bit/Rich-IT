@@ -169,7 +169,11 @@ export const services = pgTable(
     sortOrder: integer("sort_order").default(0).notNull(),
     ...timestamps,
   },
-  (t) => [index("services_category_idx").on(t.category), index("services_active_idx").on(t.active)],
+  (t) => [
+    uniqueIndex("services_sku_idx").on(t.sku),
+    index("services_category_idx").on(t.category),
+    index("services_active_idx").on(t.active),
+  ],
 );
 
 export const retainers = pgTable(
