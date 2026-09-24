@@ -42,3 +42,16 @@ export function verifyApproval(workOrderId: string, approvalToken: string, signa
   const b = Buffer.from(signature);
   return a.length === b.length && timingSafeEqual(a, b);
 }
+
+/** Stable token protecting the public ICS calendar feed (Google Calendar subscription URL). */
+export function icsFeedToken(): string {
+  const secret = process.env.APPROVAL_LINK_SECRET ?? process.env.VAULT_ENCRYPTION_KEY ?? "dev-secret";
+  return createHmac("sha256", secret).update("calendar-ics-feed").digest("base64url").slice(0, 32);
+}
+
+export function verifyIcsFeedToken(token: string): boolean {
+  const expected = icsFeedToken();
+  const a = Buffer.from(expected);
+  const b = Buffer.from(token || "");
+  return a.length === b.length && timingSafeEqual(a, b);
+}
