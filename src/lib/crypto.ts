@@ -30,19 +30,6 @@ export function decryptJson<T = unknown>(payload: string): T {
   return JSON.parse(plaintext.toString("utf8")) as T;
 }
 
-/** HMAC signature for public approval links: /approve/<id>?t=<token> */
-export function signApproval(workOrderId: string, approvalToken: string): string {
-  const secret = process.env.APPROVAL_LINK_SECRET ?? process.env.VAULT_ENCRYPTION_KEY ?? "dev-secret";
-  return createHmac("sha256", secret).update(`${workOrderId}:${approvalToken}`).digest("base64url").slice(0, 32);
-}
-
-export function verifyApproval(workOrderId: string, approvalToken: string, signature: string): boolean {
-  const expected = signApproval(workOrderId, approvalToken);
-  const a = Buffer.from(expected);
-  const b = Buffer.from(signature);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
 /** Stable token protecting the public ICS calendar feed (Google Calendar subscription URL). */
 export function icsFeedToken(): string {
   const secret = process.env.APPROVAL_LINK_SECRET ?? process.env.VAULT_ENCRYPTION_KEY ?? "dev-secret";

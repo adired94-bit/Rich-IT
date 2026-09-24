@@ -28,6 +28,13 @@ export async function getWorkOrder(id: string) {
   });
 }
 
+export async function listDocumentEvents(workOrderId: string) {
+  return db.query.documentEvents.findMany({
+    where: (events, { eq }) => eq(events.workOrderId, workOrderId),
+    orderBy: (events, { asc }) => [asc(events.createdAt)],
+  });
+}
+
 export async function getWorkOrderByApprovalToken(token: string) {
   return db.query.workOrders.findFirst({
     where: eq(workOrders.approvalToken, token),

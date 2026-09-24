@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import { workOrders, workOrderItems, retainerUsage, interactionLogs } from "@/db/schema";
+import { workOrders, workOrderItems, retainerUsage, interactionLogs, documentEvents } from "@/db/schema";
 import { workOrderFormSchema, computeTotals, type WorkOrderFormValues } from "@/lib/validators/work-orders";
 import { nextWorkOrderNumber } from "@/server/queries/work-orders";
 import { eq } from "drizzle-orm";
@@ -33,6 +33,8 @@ export async function upsertWorkOrderAction(raw: WorkOrderFormValues) {
     transcript: data.transcript ? data.transcript : undefined,
     aiResult: data.aiResult ? data.aiResult : undefined,
   };
+
+  const isNew = !data.id;
 
   const id = await db.transaction(async (tx) => {
     let workOrderId = data.id;
@@ -78,14 +80,17 @@ export async function upsertWorkOrderAction(raw: WorkOrderFormValues) {
       }
     }
 
-    await tx.insert(interactionLogs).values({
-      clientId: data.clientId,
-      type: "work_order",
-      title: `${data.title}`,
-      body: data.summary || null,
-      workOrderId,
-      occurredAt: new Date(data.date),
-    });
+    if (isNew) {
+      await tx.insert(interactionLogs).values({
+        clientId: data.clientId,
+        type: "work_order",
+        title: data.title,
+        body: data.summary || null,
+        workOrderId,
+        occurredAt: new Date(data.date),
+      });
+      await tx.insert(documentEvents).values({ workOrderId, event: "created" });
+    }
 
     return workOrderId;
   });
@@ -106,6 +111,7 @@ export async function deleteWorkOrderAction(id: string, clientId?: string) {
 
 export async function cancelWorkOrderAction(id: string) {
   await db.update(workOrders).set({ status: "cancelled" }).where(eq(workOrders.id, id));
+  await db.insert(documentEvents).values({ workOrderId: id, event: "cancelled" });
   revalidatePath("/work-orders");
   revalidatePath(`/work-orders/${id}`);
   return { ok: true as const };
@@ -113,7 +119,9 @@ export async function cancelWorkOrderAction(id: string) {
 
 export async function markWorkOrderSentAction(id: string) {
   await db.update(workOrders).set({ status: "sent", sentAt: new Date() }).where(eq(workOrders.id, id));
+  await db.insert(documentEvents).values({ workOrderId: id, event: "sent" });
   revalidatePath("/work-orders");
   revalidatePath(`/work-orders/${id}`);
+  revalidatePath("/");
   return { ok: true as const };
 }
