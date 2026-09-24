@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import type { User } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PREFIXES = [
@@ -23,25 +24,34 @@ export async function updateSession(request: NextRequest) {
   // Not configured yet (fresh checkout): let everything through so the setup screen is reachable.
   if (!url || !anon) return response;
 
-  const supabase = createServerClient(url, anon, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
-      },
-    },
-  });
-
-  // Do not run code between createServerClient and auth.getUser() — cookies may be refreshed here.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const isPublic = PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+
+  // If the Supabase session check itself fails (bad network, transient outage,
+  // misconfiguration), fail closed to "not authenticated" rather than crashing
+  // the whole request with a 500 — the user still gets a working /login page.
+  let user: User | null = null;
+  try {
+    const supabase = createServerClient(url, anon, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+        },
+      },
+    });
+
+    // Do not run code between createServerClient and auth.getUser() — cookies may be refreshed here.
+    const {
+      data: { user: sessionUser },
+    } = await supabase.auth.getUser();
+    user = sessionUser;
+  } catch (err) {
+    console.error("RICH_IT_MIDDLEWARE_AUTH_ERROR", err);
+  }
 
   if (!user && !isPublic) {
     const loginUrl = request.nextUrl.clone();
