@@ -4,6 +4,8 @@ import { db } from "@/db";
 import { workOrders, documentEvents } from "@/db/schema";
 import { getWorkOrderByApprovalToken } from "@/server/queries/work-orders";
 import { createServiceClient } from "@/lib/supabase/server";
+import { sendPushToAll } from "@/lib/push";
+import { company } from "@/config/company";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -14,6 +16,11 @@ export async function markWorkOrderViewedAction(token: string) {
     await db.update(workOrders).set({ status: "viewed", viewedAt: new Date() }).where(eq(workOrders.id, wo.id));
     await db.insert(documentEvents).values({ workOrderId: wo.id, event: "viewed" });
     revalidatePath(`/work-orders/${wo.id}`);
+    await sendPushToAll({
+      title: `${wo.client.name} צפה במסמך`,
+      body: `${wo.number} · ${wo.title}`,
+      url: `/work-orders/${wo.id}`,
+    }).catch(() => {});
   }
   return { ok: true as const };
 }
@@ -52,5 +59,10 @@ export async function signWorkOrderAction(token: string, signerName: string, sig
   revalidatePath(`/work-orders/${wo.id}`);
   revalidatePath("/work-orders");
   revalidatePath("/");
+  await sendPushToAll({
+    title: `${company.name} — נחתם דף שירות`,
+    body: `${wo.number} נחתם על ידי ${signerName}`,
+    url: `/work-orders/${wo.id}`,
+  }).catch(() => {});
   return { ok: true as const };
 }

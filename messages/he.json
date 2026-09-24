@@ -241,6 +241,7 @@
     "searchPlaceholder": "חיפוש שירות...",
     "count": "{count, plural, =0 {אין שירותים} one {שירות אחד} other {# שירותים}}",
     "seed": "טעינת קטלוג ברירת מחדל",
+    "seedHint": "מוסיף את שש קטגוריות השירות של Rich IT Solutions (לא ימחק שירותים קיימים).",
     "seedDone": "הקטלוג נטען",
     "categories": {
       "network_infrastructure": "תשתיות תקשורת",

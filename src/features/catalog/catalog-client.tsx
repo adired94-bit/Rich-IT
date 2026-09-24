@@ -148,7 +148,7 @@ export function CatalogClient({ services }: { services: Service[] }) {
         <EmptyState
           icon={ListChecks}
           title={tApp("empty")}
-          description={services.length === 0 ? t("seedCatalogHint") : tApp("noResults")}
+          description={services.length === 0 ? t("seedHint") : tApp("noResults")}
           action={
             services.length === 0 ? (
               <Button onClick={handleSeed} disabled={seeding} className="gap-1.5">

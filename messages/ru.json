@@ -241,6 +241,7 @@
     "searchPlaceholder": "Поиск услуги...",
     "count": "{count, plural, =0 {Нет услуг} one {# услуга} few {# услуги} other {# услуг}}",
     "seed": "Загрузить каталог по умолчанию",
+    "seedHint": "Добавляет шесть категорий услуг Rich IT Solutions (существующие услуги не удаляются).",
     "seedDone": "Каталог загружен",
     "categories": {
       "network_infrastructure": "Сетевая инфраструктура",
