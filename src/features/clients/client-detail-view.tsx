@@ -2,7 +2,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
-import { ArrowRight, Mic, Phone, MessageCircle, Pencil, Mail, MapPin } from "lucide-react";
+import { ArrowRight, Mic, Phone, MessageCircle, Pencil, Mail, MapPin, FilePlus2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -40,6 +40,7 @@ interface Props {
 export function ClientDetailView({ client, vault, retainers, interactions, events, workOrders, stats }: Props) {
   const t = useTranslations("clients");
   const tApp = useTranslations("app");
+  const tWo = useTranslations("workOrders");
   const locale = useLocale();
   const [editOpen, setEditOpen] = React.useState(false);
   const openQuickRecord = useUiStore((s) => s.openQuickRecord);
@@ -74,6 +75,11 @@ export function ClientDetailView({ client, vault, retainers, interactions, event
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button size="sm" className="gap-1.5" asChild>
+            <Link href={`/work-orders/new?clientId=${client.id}`}>
+              <FilePlus2 className="h-4 w-4" /> {tWo("new")}
+            </Link>
+          </Button>
           <Button variant="voice" size="sm" className="gap-1.5" onClick={() => openQuickRecord(client.id)}>
             <Mic className="h-4 w-4" /> {t("overview.recordForClient")}
           </Button>
@@ -116,7 +122,7 @@ export function ClientDetailView({ client, vault, retainers, interactions, event
           <VaultTab clientId={client.id} entries={vault} />
         </TabsContent>
         <TabsContent value="documents">
-          <DocumentsTab workOrders={workOrders} />
+          <DocumentsTab clientId={client.id} workOrders={workOrders} />
         </TabsContent>
       </Tabs>
 

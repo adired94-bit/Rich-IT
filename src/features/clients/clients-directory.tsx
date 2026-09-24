@@ -107,9 +107,11 @@ export function ClientsDirectory({ rows }: { rows: Row[] }) {
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map(({ client: c, openDocuments, totalBilled }) => (
-            <Card key={c.id} className="glow-hover flex flex-col gap-3 p-4">
+            <Card key={c.id} className="glow-hover relative flex flex-col gap-3 p-4">
+              <Link href={`/clients/${c.id}`} className="absolute inset-0 z-0" aria-label={c.name} />
+
               <div className="flex items-start justify-between gap-2">
-                <Link href={`/clients/${c.id}`} className="flex min-w-0 items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <Avatar className="h-10 w-10 border border-border-strong">
                     <AvatarFallback>{initials(c.name)}</AvatarFallback>
                   </Avatar>
@@ -117,8 +119,8 @@ export function ClientsDirectory({ rows }: { rows: Row[] }) {
                     <p className="truncate text-sm font-semibold text-foreground">{c.name}</p>
                     <p className="truncate text-xs text-muted-foreground">{c.contactPerson || "—"}</p>
                   </div>
-                </Link>
-                <div className="flex shrink-0 gap-1">
+                </div>
+                <div className="relative z-10 flex shrink-0 gap-1">
                   <Button variant="ghost" size="icon-sm" onClick={() => { setEditing(c); setFormOpen(true); }}>
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
@@ -136,7 +138,7 @@ export function ClientsDirectory({ rows }: { rows: Row[] }) {
                 {c.slaLevel !== "none" && <Badge variant="primary">{t(`slaLevels.${c.slaLevel}`)}</Badge>}
               </div>
 
-              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+              <div className="relative z-10 flex flex-col gap-1 text-xs text-muted-foreground">
                 {c.phone && (
                   <a href={`tel:${c.phone}`} className="flex items-center gap-1.5 hover:text-foreground">
                     <Phone className="h-3 w-3" /> {c.phone}

@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
-import { FileText } from "lucide-react";
+import { FilePlus2, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusDot } from "@/components/ui/status-dot";
@@ -10,17 +11,42 @@ import { formatDate, formatMoney } from "@/lib/utils";
 import type { listClientWorkOrders } from "@/server/queries/clients";
 import type { Locale } from "@/i18n/config";
 
-export function DocumentsTab({ workOrders }: { workOrders: Awaited<ReturnType<typeof listClientWorkOrders>> }) {
+export function DocumentsTab({
+  clientId,
+  workOrders,
+}: {
+  clientId: string;
+  workOrders: Awaited<ReturnType<typeof listClientWorkOrders>>;
+}) {
   const t = useTranslations("clients.documents");
   const tWo = useTranslations("workOrders");
   const locale = useLocale() as Locale;
 
   if (workOrders.length === 0) {
-    return <EmptyState icon={FileText} title={t("empty")} />;
+    return (
+      <EmptyState
+        icon={FileText}
+        title={t("empty")}
+        action={
+          <Button size="sm" className="gap-1.5" asChild>
+            <Link href={`/work-orders/new?clientId=${clientId}`}>
+              <FilePlus2 className="h-4 w-4" /> {tWo("new")}
+            </Link>
+          </Button>
+        }
+      />
+    );
   }
 
   return (
     <div className="space-y-2">
+      <div className="flex justify-end">
+        <Button size="sm" variant="outline" className="gap-1.5" asChild>
+          <Link href={`/work-orders/new?clientId=${clientId}`}>
+            <FilePlus2 className="h-4 w-4" /> {tWo("new")}
+          </Link>
+        </Button>
+      </div>
       {workOrders.map((wo) => (
         <Link key={wo.id} href={`/work-orders/${wo.id}`}>
           <Card className="glow-hover flex items-center justify-between gap-3 p-3">
