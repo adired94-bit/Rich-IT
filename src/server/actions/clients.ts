@@ -2,6 +2,7 @@
 
 import { db } from "@/db";
 import { clients, clientVault, retainers, retainerUsage, interactionLogs } from "@/db/schema";
+import { listRetainers, listClientsBasic } from "@/server/queries/clients";
 import { clientFormSchema, vaultFormSchema, retainerFormSchema, retainerUsageSchema, interactionFormSchema, type VaultPayload } from "@/lib/validators/clients";
 import { encryptJson, decryptJson } from "@/lib/crypto";
 import { eq } from "drizzle-orm";
@@ -143,4 +144,16 @@ export async function deleteInteractionAction(id: string, clientId: string) {
   await db.delete(interactionLogs).where(eq(interactionLogs.id, id));
   revalidatePath(`/clients/${clientId}`);
   return { ok: true as const };
+}
+
+/* ------------------------ Cross-feature helpers ------------------------ */
+
+/** Active retainers for a client, used by the work-order editor's hour-bank picker. */
+export async function fetchActiveRetainersAction(clientId: string) {
+  const rows = await listRetainers(clientId);
+  return rows.filter((r) => r.active);
+}
+
+export async function fetchClientsBasicAction() {
+  return listClientsBasic();
 }

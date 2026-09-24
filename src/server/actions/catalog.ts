@@ -4,8 +4,13 @@ import { db } from "@/db";
 import { services } from "@/db/schema";
 import { seedServices } from "@/db/seed-data";
 import { serviceFormSchema, type ServiceFormValues } from "@/lib/validators/catalog";
+import { listActiveServices } from "@/server/queries/catalog";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+
+export async function fetchActiveServicesAction() {
+  return listActiveServices();
+}
 
 function toKeywordsArray(input: string[] | string): string[] {
   if (Array.isArray(input)) return input.map((k) => k.trim()).filter(Boolean);
