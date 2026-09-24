@@ -95,11 +95,14 @@ export async function getMonthlyRevenueTrend(months = 6) {
   since.setHours(0, 0, 0, 0);
   since.setMonth(since.getMonth() - (months - 1));
 
+  // Pass an ISO string rather than a raw Date: some serverless runtimes (e.g.
+  // Netlify's) fail to serialize a Date instance as a postgres.js query
+  // parameter ("Received an instance of Date") in a raw sql`` template.
   const rows = await db.execute<{ month: string; total: number }>(sql`
     select to_char(date_trunc('month', ${workOrders.signedAt}), 'YYYY-MM') as month,
            coalesce(sum(${workOrders.totalAmount}), 0)::float as total
     from ${workOrders}
-    where ${workOrders.status} = 'signed' and ${workOrders.signedAt} >= ${since}
+    where ${workOrders.status} = 'signed' and ${workOrders.signedAt} >= ${since.toISOString()}
     group by 1
     order by 1
   `);
