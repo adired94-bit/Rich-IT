@@ -15,12 +15,18 @@ const withSerwist = withSerwistInit({
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   serverExternalPackages: ["@react-pdf/renderer", "postgres"],
-  // PDF font files are read at runtime via a computed fs path
-  // (path.join(process.cwd(), "public/fonts", ...)), which serverless
-  // bundlers can't discover through static analysis and silently drop from
-  // the deployed function — force-include them everywhere.
+  // Font files read at runtime via computed fs paths can't be discovered by
+  // serverless bundlers' static analysis and get silently dropped from the
+  // deployed function — force-include them everywhere. This covers both our
+  // own custom fonts (public/fonts) and pdfkit's bundled standard fonts,
+  // which @react-pdf/renderer loads internally the same dynamic way
+  // (missing standard-fonts/*.cjs caused "Cannot find module ... Helvetica.cjs").
   outputFileTracingIncludes: {
-    "/**": ["./public/fonts/**"],
+    "/**": [
+      "./public/fonts/**",
+      "./node_modules/pdfkit/js/standard-fonts/**",
+      "./node_modules/pdfkit/js/data/**",
+    ],
   },
   experimental: {
     serverActions: { bodySizeLimit: "25mb" },
