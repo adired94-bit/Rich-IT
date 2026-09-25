@@ -17,7 +17,15 @@ export const SignaturePad = React.forwardRef<SignaturePadHandle, { label: string
       getDataUrl: () => {
         const pad = padRef.current;
         if (!pad || pad.isEmpty()) return null;
-        return pad.getTrimmedCanvas().toDataURL("image/png");
+        try {
+          // Avoid getTrimmedCanvas(): its cropping step is known to throw on
+          // some mobile browsers (notably iOS Safari), which would leave the
+          // "sign" button appearing to do nothing since this runs outside
+          // the caller's try/catch. Untrimmed whitespace is a fine trade-off.
+          return pad.toDataURL("image/png");
+        } catch {
+          return null;
+        }
       },
       clear: () => padRef.current?.clear(),
     }));
