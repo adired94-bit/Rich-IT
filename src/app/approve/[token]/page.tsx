@@ -1,13 +1,16 @@
 import { getWorkOrderByApprovalToken } from "@/server/queries/work-orders";
+import { getCompanySettings } from "@/server/queries/settings";
 import { ApprovalView } from "@/features/approval/approval-view";
-import { company } from "@/config/company";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: `אישור מסמך — ${company.name}` };
+export async function generateMetadata(): Promise<Metadata> {
+  const company = await getCompanySettings();
+  return { title: `אישור מסמך — ${company.name}` };
+}
 
 export default async function ApprovePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
-  const workOrder = await getWorkOrderByApprovalToken(token);
+  const [workOrder, company] = await Promise.all([getWorkOrderByApprovalToken(token), getCompanySettings()]);
 
   if (!workOrder) {
     return (
@@ -20,5 +23,5 @@ export default async function ApprovePage({ params }: { params: Promise<{ token:
     );
   }
 
-  return <ApprovalView workOrder={workOrder} token={token} />;
+  return <ApprovalView workOrder={workOrder} token={token} companyName={company.name} />;
 }

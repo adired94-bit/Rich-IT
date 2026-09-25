@@ -2,7 +2,7 @@ import "server-only";
 import React from "react";
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
 import { DOC_LABELS } from "./labels";
-import { company } from "@/config/company";
+import type { CompanySettings } from "@/server/queries/settings";
 import type { WorkOrder, WorkOrderItem, Client } from "@/db/schema";
 
 type WorkOrderWithRelations = WorkOrder & { client: Client; items: WorkOrderItem[] };
@@ -108,7 +108,7 @@ function ItemsTable({ wo, lang }: { wo: WorkOrderWithRelations; lang: "he" | "ru
   );
 }
 
-function LanguageSection({ wo, lang }: { wo: WorkOrderWithRelations; lang: "he" | "ru" }) {
+function LanguageSection({ wo, lang, company }: { wo: WorkOrderWithRelations; lang: "he" | "ru"; company: CompanySettings }) {
   const t = LABELS[lang];
   const isHe = lang === "he";
   const align: "right" | "left" = isHe ? "right" : "left";
@@ -221,7 +221,7 @@ function LanguageSection({ wo, lang }: { wo: WorkOrderWithRelations; lang: "he" 
   );
 }
 
-export function WorkOrderPdfDocument({ workOrder }: { workOrder: WorkOrderWithRelations }) {
+export function WorkOrderPdfDocument({ workOrder, company }: { workOrder: WorkOrderWithRelations; company: CompanySettings }) {
   const languages: ("he" | "ru")[] = workOrder.language === "dual" ? ["he", "ru"] : workOrder.language === "ru" ? ["ru"] : ["he"];
 
   return (
@@ -230,7 +230,7 @@ export function WorkOrderPdfDocument({ workOrder }: { workOrder: WorkOrderWithRe
         {languages.map((lang, i) => (
           <React.Fragment key={lang}>
             {i > 0 && <View style={styles.divider} />}
-            <LanguageSection wo={workOrder} lang={lang} />
+            <LanguageSection wo={workOrder} lang={lang} company={company} />
           </React.Fragment>
         ))}
         <View style={styles.footer} fixed>

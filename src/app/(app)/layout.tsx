@@ -1,10 +1,11 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { getCurrentUser } from "@/lib/supabase/server";
+import { getCompanySettings } from "@/server/queries/settings";
 import { QuickRecordDialog } from "@/features/voice/quick-record-dialog";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
+  const [user, company] = await Promise.all([getCurrentUser(), getCompanySettings()]);
 
   return (
     <div className="min-h-dvh grid-bg">
@@ -13,7 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <Header email={user?.email} />
         <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 lg:py-8">{children}</main>
       </div>
-      <QuickRecordDialog />
+      <QuickRecordDialog company={company} />
     </div>
   );
 }

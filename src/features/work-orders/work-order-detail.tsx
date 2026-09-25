@@ -22,7 +22,7 @@ import {
 import { WorkOrderEditor } from "./work-order-editor";
 import { cancelWorkOrderAction, markWorkOrderSentAction } from "@/server/actions/work-orders";
 import { formatDateTime, formatMoney, toWhatsAppNumber } from "@/lib/utils";
-import { company } from "@/config/company";
+import type { CompanySettings } from "@/server/queries/settings";
 import type { getWorkOrder, listDocumentEvents } from "@/server/queries/work-orders";
 import type { DocumentEvent } from "@/db/schema";
 import type { Locale } from "@/i18n/config";
@@ -42,10 +42,12 @@ export function WorkOrderDetail({
   workOrder,
   events,
   approvalUrl,
+  company,
 }: {
   workOrder: ExistingWorkOrder;
   events: EventRow[];
   approvalUrl: string;
+  company: CompanySettings;
 }) {
   const t = useTranslations("workOrders");
   const tApp = useTranslations("app");
@@ -159,7 +161,7 @@ export function WorkOrderDetail({
         </div>
       </div>
 
-      <WorkOrderEditor workOrder={workOrder} onSaved={() => router.refresh()} />
+      <WorkOrderEditor workOrder={workOrder} company={company} onSaved={() => router.refresh()} />
 
       {events.length > 0 && (
         <Card>

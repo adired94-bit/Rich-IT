@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { SignaturePad, type SignaturePadHandle } from "./signature-pad";
 import { markWorkOrderViewedAction, signWorkOrderAction } from "@/server/actions/approval";
 import { DOC_LABELS, type DocLang } from "@/lib/pdf/labels";
-import { company } from "@/config/company";
 import type { getWorkOrderByApprovalToken } from "@/server/queries/work-orders";
 
 type WorkOrderData = NonNullable<Awaited<ReturnType<typeof getWorkOrderByApprovalToken>>>;
@@ -40,7 +39,7 @@ function fmtDate(d: Date | string, lang: DocLang) {
   return new Intl.DateTimeFormat(lang === "ru" ? "ru-RU" : "he-IL", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(d));
 }
 
-export function ApprovalView({ workOrder, token }: { workOrder: WorkOrderData; token: string }) {
+export function ApprovalView({ workOrder, token, companyName }: { workOrder: WorkOrderData; token: string; companyName: string }) {
   const lang: DocLang = workOrder.language === "ru" ? "ru" : "he";
   const t = UI[lang];
   const doc = DOC_LABELS[lang];
@@ -100,7 +99,7 @@ export function ApprovalView({ workOrder, token }: { workOrder: WorkOrderData; t
       <div className="mx-auto max-w-2xl space-y-5">
         <div className="flex flex-col items-center gap-2 text-center">
           <Image src="/icons/icon-96.png" alt="" width={48} height={48} className="rounded-xl shadow-glow" />
-          <h1 className="text-lg font-bold text-foreground">{company.name}</h1>
+          <h1 className="text-lg font-bold text-foreground">{companyName}</h1>
           <p className="text-sm text-muted-foreground">{t.subtitle}</p>
         </div>
 

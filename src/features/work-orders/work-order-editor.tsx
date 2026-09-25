@@ -18,7 +18,7 @@ import { fetchActiveServicesAction } from "@/server/actions/catalog";
 import { upsertWorkOrderAction } from "@/server/actions/work-orders";
 import { computeTotals, documentLanguages, type WorkOrderItemValues } from "@/lib/validators/work-orders";
 import { formatMoney, toInputDateTime, formatNumber } from "@/lib/utils";
-import { company } from "@/config/company";
+import type { CompanySettings } from "@/server/queries/settings";
 import type { VoiceProcessResponse } from "@/features/voice/types";
 import type { Locale } from "@/i18n/config";
 import type { getWorkOrder } from "@/server/queries/work-orders";
@@ -42,7 +42,7 @@ interface FormState {
   retainerHours: number;
 }
 
-function blankForm(clientId?: string): FormState {
+function blankForm(company: CompanySettings, clientId?: string): FormState {
   return {
     clientId: clientId ?? "",
     date: toInputDateTime(new Date()),
@@ -61,7 +61,7 @@ function blankForm(clientId?: string): FormState {
   };
 }
 
-function fromExisting(wo: ExistingWorkOrder): FormState {
+function fromExisting(wo: ExistingWorkOrder, company: CompanySettings): FormState {
   return {
     clientId: wo.clientId,
     date: toInputDateTime(wo.date),
@@ -90,8 +90,8 @@ function fromExisting(wo: ExistingWorkOrder): FormState {
   };
 }
 
-function fromAi(data: VoiceProcessResponse): FormState {
-  const base = blankForm(data.clientId ?? undefined);
+function fromAi(data: VoiceProcessResponse, company: CompanySettings): FormState {
+  const base = blankForm(company, data.clientId ?? undefined);
   return {
     ...base,
     title: data.extraction.title,
@@ -116,12 +116,14 @@ export function WorkOrderEditor({
   workOrder,
   aiData,
   defaultClientId,
+  company,
   onSaved,
   onCancel,
 }: {
   workOrder?: ExistingWorkOrder;
   aiData?: VoiceProcessResponse;
   defaultClientId?: string;
+  company: CompanySettings;
   onSaved: (id: string) => void;
   onCancel?: () => void;
 }) {
@@ -131,7 +133,7 @@ export function WorkOrderEditor({
   const locale = useLocale() as Locale;
 
   const [form, setForm] = React.useState<FormState>(() =>
-    workOrder ? fromExisting(workOrder) : aiData ? fromAi(aiData) : blankForm(defaultClientId),
+    workOrder ? fromExisting(workOrder, company) : aiData ? fromAi(aiData, company) : blankForm(company, defaultClientId),
   );
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [saving, setSaving] = React.useState(false);

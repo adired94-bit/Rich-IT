@@ -5,7 +5,7 @@ import { workOrders, documentEvents } from "@/db/schema";
 import { getWorkOrderByApprovalToken } from "@/server/queries/work-orders";
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendPushToAll } from "@/lib/push";
-import { company } from "@/config/company";
+import { getCompanySettings } from "@/server/queries/settings";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -59,6 +59,7 @@ export async function signWorkOrderAction(token: string, signerName: string, sig
   revalidatePath(`/work-orders/${wo.id}`);
   revalidatePath("/work-orders");
   revalidatePath("/");
+  const company = await getCompanySettings();
   await sendPushToAll({
     title: `${company.name} — נחתם דף שירות`,
     body: `${wo.number} נחתם על ידי ${signerName}`,

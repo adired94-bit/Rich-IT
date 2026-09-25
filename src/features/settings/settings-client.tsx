@@ -2,27 +2,58 @@
 import * as React from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Bell, BellOff, Building2, Cable, Copy, Download, Loader2, Sparkles } from "lucide-react";
+import { Bell, BellOff, Building2, Cable, Copy, Download, KeyRound, Loader2, Pencil, Sparkles, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { seedCatalogAction } from "@/server/actions/catalog";
 import { subscribePushAction, unsubscribePushAction } from "@/server/actions/push";
+import { updateCompanySettingsAction, verifyPasswordAction, updateAiKeysAction, clearAiKeysAction } from "@/server/actions/settings";
 import { isPushSupported, getExistingPushSubscription, subscribeToPush, unsubscribeFromPush } from "@/lib/push-client";
-import { company } from "@/config/company";
+import type { CompanySettings } from "@/server/queries/settings";
 
 interface Status {
   supabase: boolean;
   database: boolean;
-  anthropic: boolean;
-  openai: boolean;
   vault: boolean;
   push: boolean;
 }
 
-export function SettingsClient({ status, icsUrl, vapidPublicKey }: { status: Status; icsUrl: string; vapidPublicKey: string }) {
+interface AiKeysStatus {
+  anthropicConfigured: boolean;
+  anthropicMasked: string | null;
+  anthropicSource: "app" | "env" | null;
+  openaiConfigured: boolean;
+  openaiMasked: string | null;
+  openaiSource: "app" | "env" | null;
+  claudeModel: string;
+  whisperModel: string;
+}
+
+export function SettingsClient({
+  status,
+  company,
+  aiKeysStatus,
+  icsUrl,
+  vapidPublicKey,
+}: {
+  status: Status;
+  company: CompanySettings;
+  aiKeysStatus: AiKeysStatus;
+  icsUrl: string;
+  vapidPublicKey: string;
+}) {
   const t = useTranslations("settings");
   const tApp = useTranslations("app");
   const [seeding, setSeeding] = React.useState(false);
@@ -86,29 +117,12 @@ export function SettingsClient({ status, icsUrl, vapidPublicKey }: { status: Sta
   const statusRows: { label: string; ok: boolean }[] = [
     { label: "Supabase", ok: status.supabase },
     { label: "Database (Postgres)", ok: status.database },
-    { label: "Anthropic (Claude)", ok: status.anthropic },
-    { label: "OpenAI (Whisper)", ok: status.openai },
     { label: "Vault encryption key", ok: status.vault },
   ];
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardContent className="pt-5">
-          <p className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-foreground">
-            <Building2 className="h-4 w-4 text-primary" /> {t("company")}
-          </p>
-          <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
-            <Row label="Name" value={company.name} />
-            <Row label="Engineer" value={company.engineerName || "—"} />
-            <Row label="Phone" value={company.phone || "—"} />
-            <Row label="Email" value={company.email || "—"} />
-            <Row label="Address" value={company.address || "—"} />
-            <Row label="VAT ID" value={company.vatId || "—"} />
-          </dl>
-          <p className="mt-3 text-[11px] text-muted-foreground">{t("envHint")}</p>
-        </CardContent>
-      </Card>
+      <CompanyCard company={company} />
 
       <Card>
         <CardContent className="pt-5">
@@ -123,8 +137,11 @@ export function SettingsClient({ status, icsUrl, vapidPublicKey }: { status: Sta
               </div>
             ))}
           </div>
+          <p className="mt-3 text-[11px] text-muted-foreground">{t("envHint")}</p>
         </CardContent>
       </Card>
+
+      <AiKeysCard status={aiKeysStatus} />
 
       <Card>
         <CardContent className="space-y-4 pt-5">
@@ -187,11 +204,275 @@ export function SettingsClient({ status, icsUrl, vapidPublicKey }: { status: Sta
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+/* ------------------------------ Company details (editable) ------------------------------ */
+
+function CompanyCard({ company }: { company: CompanySettings }) {
+  const t = useTranslations("settings");
+  const tApp = useTranslations("app");
+  const [form, setForm] = React.useState({
+    name: company.name,
+    phone: company.phone,
+    email: company.email,
+    address: company.address,
+    vatId: company.vatId,
+    website: company.website,
+    engineerName: company.engineerName,
+    defaultVatRate: String(Math.round(company.defaultVatRate * 100)),
+  });
+  const [saving, setSaving] = React.useState(false);
+
+  function set<K extends keyof typeof form>(key: K, value: string) {
+    setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await updateCompanySettingsAction({
+        name: form.name,
+        phone: form.phone,
+        email: form.email,
+        address: form.address,
+        vatId: form.vatId,
+        website: form.website,
+        engineerName: form.engineerName,
+        defaultVatRate: Math.max(0, Math.min(100, Number(form.defaultVatRate) || 0)) / 100,
+      });
+      toast.success(tApp("saved"));
+    } catch {
+      toast.error(tApp("error"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
-    <div className="flex items-center justify-between border-b border-border/60 py-1.5 sm:border-0 sm:py-0">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium text-foreground">{value}</dd>
+    <Card>
+      <CardContent className="space-y-4 pt-5">
+        <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+          <Building2 className="h-4 w-4 text-primary" /> {t("company")}
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label={t("fields.name")}>
+            <Input value={form.name} onChange={(e) => set("name", e.target.value)} />
+          </Field>
+          <Field label={t("fields.engineerName")}>
+            <Input value={form.engineerName} onChange={(e) => set("engineerName", e.target.value)} />
+          </Field>
+          <Field label={t("fields.phone")}>
+            <Input dir="ltr" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+          </Field>
+          <Field label={t("fields.email")}>
+            <Input dir="ltr" value={form.email} onChange={(e) => set("email", e.target.value)} />
+          </Field>
+          <Field label={t("fields.address")} className="sm:col-span-2">
+            <Input value={form.address} onChange={(e) => set("address", e.target.value)} />
+          </Field>
+          <Field label={t("fields.vatId")}>
+            <Input dir="ltr" value={form.vatId} onChange={(e) => set("vatId", e.target.value)} />
+          </Field>
+          <Field label={t("fields.website")}>
+            <Input dir="ltr" value={form.website} onChange={(e) => set("website", e.target.value)} />
+          </Field>
+          <Field label={t("fields.defaultVatRate")}>
+            <Input dir="ltr" type="number" min={0} max={100} value={form.defaultVatRate} onChange={(e) => set("defaultVatRate", e.target.value)} />
+          </Field>
+        </div>
+        <div className="flex justify-end">
+          <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            {tApp("save")}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Field({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
+  return (
+    <div className={className}>
+      <Label className="mb-1.5 block text-xs text-muted-foreground">{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+/* ------------------------------ AI keys (password gated) ------------------------------ */
+
+function AiKeysCard({ status }: { status: AiKeysStatus }) {
+  const t = useTranslations("settings");
+  const tApp = useTranslations("app");
+  const [passwordOpen, setPasswordOpen] = React.useState(false);
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [password, setPassword] = React.useState("");
+  const [verifying, setVerifying] = React.useState(false);
+  const [passwordError, setPasswordError] = React.useState(false);
+  const [form, setForm] = React.useState({
+    anthropicApiKey: "",
+    openaiApiKey: "",
+    claudeModel: status.claudeModel,
+    whisperModel: status.whisperModel,
+  });
+  const [saving, setSaving] = React.useState(false);
+
+  function openPasswordPrompt() {
+    setPassword("");
+    setPasswordError(false);
+    setPasswordOpen(true);
+  }
+
+  async function handleVerify() {
+    setVerifying(true);
+    setPasswordError(false);
+    try {
+      const res = await verifyPasswordAction(password);
+      if (!res.ok) {
+        setPasswordError(true);
+        return;
+      }
+      setForm({ anthropicApiKey: "", openaiApiKey: "", claudeModel: status.claudeModel, whisperModel: status.whisperModel });
+      setPasswordOpen(false);
+      setEditOpen(true);
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  async function handlePublish() {
+    setSaving(true);
+    try {
+      await updateAiKeysAction(password, {
+        anthropicApiKey: form.anthropicApiKey,
+        openaiApiKey: form.openaiApiKey,
+        claudeModel: form.claudeModel,
+        whisperModel: form.whisperModel,
+      });
+      toast.success(tApp("saved"));
+      setEditOpen(false);
+      setPassword("");
+    } catch {
+      toast.error(tApp("error"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleClear() {
+    setSaving(true);
+    try {
+      await clearAiKeysAction(password);
+      toast.success(tApp("deleted"));
+      setEditOpen(false);
+      setPassword("");
+    } catch {
+      toast.error(tApp("error"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 pt-5">
+        <div className="flex items-center justify-between">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            <KeyRound className="h-4 w-4 text-primary" /> {t("aiKeys")}
+          </p>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={openPasswordPrompt}>
+            <Pencil className="h-3.5 w-3.5" /> {tApp("edit")}
+          </Button>
+        </div>
+        <div className="space-y-2">
+          <KeyRow label="Anthropic (Claude)" configured={status.anthropicConfigured} masked={status.anthropicMasked} />
+          <KeyRow label="OpenAI (Whisper)" configured={status.openaiConfigured} masked={status.openaiMasked} />
+        </div>
+        <p className="text-[11px] text-muted-foreground">{t("aiKeysHint")}</p>
+      </CardContent>
+
+      {/* Step 1: confirm identity */}
+      <Dialog open={passwordOpen} onOpenChange={setPasswordOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("confirmPassword")}</DialogTitle>
+            <DialogDescription>{t("confirmPasswordHint")}</DialogDescription>
+          </DialogHeader>
+          <Input
+            type="password"
+            dir="ltr"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleVerify()}
+            autoFocus
+          />
+          {passwordError && <p className="text-xs text-destructive">{t("wrongPassword")}</p>}
+          <DialogFooter>
+            <Button onClick={handleVerify} disabled={verifying || !password} className="gap-1.5">
+              {verifying && <Loader2 className="h-4 w-4 animate-spin" />}
+              {tApp("continue")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Step 2: edit + publish */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("aiKeys")}</DialogTitle>
+            <DialogDescription>{t("aiKeysEditHint")}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Field label="Anthropic API key">
+              <Input
+                dir="ltr"
+                placeholder={status.anthropicMasked ?? "sk-ant-..."}
+                value={form.anthropicApiKey}
+                onChange={(e) => setForm((f) => ({ ...f, anthropicApiKey: e.target.value }))}
+              />
+            </Field>
+            <Field label="OpenAI API key">
+              <Input
+                dir="ltr"
+                placeholder={status.openaiMasked ?? "sk-..."}
+                value={form.openaiApiKey}
+                onChange={(e) => setForm((f) => ({ ...f, openaiApiKey: e.target.value }))}
+              />
+            </Field>
+            <Field label="Claude model">
+              <Input dir="ltr" value={form.claudeModel} onChange={(e) => setForm((f) => ({ ...f, claudeModel: e.target.value }))} />
+            </Field>
+            <Field label="Whisper model">
+              <Input dir="ltr" value={form.whisperModel} onChange={(e) => setForm((f) => ({ ...f, whisperModel: e.target.value }))} />
+            </Field>
+          </div>
+          <DialogFooter className="flex-row justify-between sm:justify-between">
+            <Button variant="ghost" size="sm" className="gap-1.5 text-destructive" onClick={handleClear} disabled={saving}>
+              <Trash2 className="h-3.5 w-3.5" /> {tApp("delete")}
+            </Button>
+            <Button size="sm" onClick={handlePublish} disabled={saving} className="gap-1.5">
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t("publish")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
+function KeyRow({ label, configured, masked }: { label: string; configured: boolean; masked: string | null }) {
+  const t = useTranslations("settings");
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      {configured ? (
+        <Badge variant="success" className="font-mono">
+          {masked}
+        </Badge>
+      ) : (
+        <Badge variant="destructive">{t("missing")}</Badge>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { getWorkOrder } from "@/server/queries/work-orders";
 import { registerPdfFonts } from "@/lib/pdf/fonts";
 import { WorkOrderPdfDocument } from "@/lib/pdf/work-order-document";
+import { getCompanySettings } from "@/server/queries/settings";
 import { requireUser } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -15,11 +16,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 
   const { id } = await params;
-  const workOrder = await getWorkOrder(id);
+  const [workOrder, company] = await Promise.all([getWorkOrder(id), getCompanySettings()]);
   if (!workOrder) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
   registerPdfFonts();
-  const buffer = await renderToBuffer(<WorkOrderPdfDocument workOrder={workOrder} />);
+  const buffer = await renderToBuffer(<WorkOrderPdfDocument workOrder={workOrder} company={company} />);
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {

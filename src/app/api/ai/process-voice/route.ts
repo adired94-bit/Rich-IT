@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { getOpenAiClient, WHISPER_MODEL } from "@/lib/ai/openai";
-import { getAnthropicClient, CLAUDE_MODEL } from "@/lib/ai/anthropic";
+import { getOpenAiClient } from "@/lib/ai/openai";
+import { getAnthropicClient } from "@/lib/ai/anthropic";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { aiExtractionSchema } from "@/lib/validators/work-orders";
 import { buildVoiceExtractionSystemPrompt, buildVoiceExtractionUserMessage, toCatalogPromptItem } from "@/lib/ai/prompt";
 import { listActiveServices } from "@/server/queries/catalog";
 import { listClientsBasic, getClient } from "@/server/queries/clients";
+import { getAiSettings } from "@/server/queries/settings";
 import { db } from "@/db";
 import { voiceLogs } from "@/db/schema";
 import { createServiceClient } from "@/lib/supabase/server";
@@ -31,7 +32,8 @@ async function uploadAudio(file: File, clientId?: string | null): Promise<string
 }
 
 export async function POST(request: Request) {
-  if (!process.env.OPENAI_API_KEY || !process.env.ANTHROPIC_API_KEY) {
+  const aiSettings = await getAiSettings();
+  if (!aiSettings.openaiApiKey || !aiSettings.anthropicApiKey) {
     return NextResponse.json({ error: "ai_not_configured" }, { status: 501 });
   }
 
@@ -62,19 +64,19 @@ export async function POST(request: Request) {
     voiceLogId = logId;
 
     // 1. Transcribe (Whisper auto-detects Hebrew / Russian / mixed speech).
-    const openai = getOpenAiClient();
+    const openai = getOpenAiClient(aiSettings.openaiApiKey);
     let transcript = "";
     let whisperLanguage: string | null = null;
     try {
       const result = await openai.audio.transcriptions.create({
         file: audio,
-        model: WHISPER_MODEL,
+        model: aiSettings.whisperModel,
         response_format: "verbose_json",
       });
       transcript = result.text;
       whisperLanguage = (result as { language?: string }).language ?? null;
     } catch {
-      const result = await openai.audio.transcriptions.create({ file: audio, model: WHISPER_MODEL });
+      const result = await openai.audio.transcriptions.create({ file: audio, model: aiSettings.whisperModel });
       transcript = typeof result === "string" ? result : result.text;
     }
 
@@ -84,12 +86,12 @@ export async function POST(request: Request) {
     }
 
     // 2. Structured extraction against the service catalog + client list.
-    const anthropic = getAnthropicClient();
+    const anthropic = getAnthropicClient(aiSettings.anthropicApiKey);
     const catalog = catalogRows.map(toCatalogPromptItem);
     const clients = clientId && lockedClient ? [{ id: lockedClient.id, name: lockedClient.name }] : clientRows;
 
     const response = await anthropic.messages.parse({
-      model: CLAUDE_MODEL,
+      model: aiSettings.claudeModel,
       max_tokens: 8000,
       output_config: { effort: "high", format: zodOutputFormat(aiExtractionSchema) },
       system: buildVoiceExtractionSystemPrompt(),

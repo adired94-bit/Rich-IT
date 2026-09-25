@@ -6,10 +6,11 @@ import { useUiStore } from "@/stores/ui-store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AudioRecorderPanel } from "./audio-recorder-panel";
 import { WorkOrderEditor } from "@/features/work-orders/work-order-editor";
+import type { CompanySettings } from "@/server/queries/settings";
 import type { VoiceProcessResponse } from "./types";
 
 /** Global quick-record entry point, mounted once in the app shell. Opened via useUiStore.openQuickRecord(). */
-export function QuickRecordDialog() {
+export function QuickRecordDialog({ company }: { company: CompanySettings }) {
   const open = useUiStore((s) => s.quickRecordOpen);
   const clientId = useUiStore((s) => s.quickRecordClientId);
   const close = useUiStore((s) => s.closeQuickRecord);
@@ -38,6 +39,7 @@ export function QuickRecordDialog() {
         {open && extracted && (
           <WorkOrderEditor
             aiData={extracted}
+            company={company}
             onSaved={(id) => {
               handleClose(false);
               router.push(`/work-orders/${id}`);

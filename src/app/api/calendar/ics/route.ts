@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { listAllEventsForIcs } from "@/server/queries/calendar";
 import { verifyIcsFeedToken } from "@/lib/crypto";
-import { company } from "@/config/company";
+import { getCompanySettings } from "@/server/queries/settings";
 
 function foldLine(line: string): string {
   // RFC 5545: fold lines longer than 75 octets with CRLF + leading space.
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid or missing token" }, { status: 401 });
   }
 
-  const events = await listAllEventsForIcs();
+  const [events, company] = await Promise.all([listAllEventsForIcs(), getCompanySettings()]);
   const now = toIcsDate(new Date());
 
   const lines: string[] = [
