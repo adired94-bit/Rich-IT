@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { workOrders } from "@/db/schema";
-import { and, eq, or } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { sendPushToAll } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     const notDoneUnpaid = unpaidOrders.filter((wo) => !wo.isCompleted).length;
 
     // Build message focusing on unpaid items, highlighting done+unpaid
-    let title = "Rich IT — בוקר טוב";
+    const title = "Rich IT — בוקר טוב";
     let body = "";
     
     if (doneUnpaid > 0 && notDoneUnpaid > 0) {
