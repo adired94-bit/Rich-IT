@@ -373,7 +373,7 @@
     "completedAt": "בוצע ב-{date}",
     "paidAt": "שולם ב-{date}",
     "paidFolder": "שולמו",
-    "paidFolderSubtitle": "דפי שירות ששולמו",
+    "paidFolderSubtitle": "דפי שירות שבוצעו ושולמו",
     "opsStatus": "סטטוס תפעולי"
   },
   "voice": {

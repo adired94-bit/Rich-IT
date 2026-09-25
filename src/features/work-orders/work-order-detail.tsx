@@ -181,41 +181,43 @@ export function WorkOrderDetail({
         </div>
       </div>
 
-      <Card>
-        <CardContent className="pt-5">
-          <p className="mb-3 text-sm font-semibold text-foreground">{t("opsStatus")}</p>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              variant={workOrder.isCompleted ? "default" : "outline"}
-              size="sm"
-              className="gap-1.5"
-              onClick={handleToggleCompleted}
-            >
-              {workOrder.isCompleted ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
-              {workOrder.isCompleted ? t("completed") : t("notCompleted")}
-            </Button>
-            <Button
-              variant={workOrder.isPaid ? "success" : "outline"}
-              size="sm"
-              className="gap-1.5"
-              onClick={handleTogglePaid}
-            >
-              <DollarSign className="h-4 w-4" />
-              {workOrder.isPaid ? t("paid") : t("notPaid")}
-            </Button>
-          </div>
-          {workOrder.completedAt && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              {t("completedAt", { date: formatDateTime(workOrder.completedAt, locale) })}
-            </p>
-          )}
-          {workOrder.paidAt && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              {t("paidAt", { date: formatDateTime(workOrder.paidAt, locale) })}
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      {workOrder.status === "signed" && (
+        <Card>
+          <CardContent className="pt-5">
+            <p className="mb-3 text-sm font-semibold text-foreground">{t("opsStatus")}</p>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant={workOrder.isCompleted ? "default" : "outline"}
+                size="sm"
+                className="gap-1.5"
+                onClick={handleToggleCompleted}
+              >
+                {workOrder.isCompleted ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                {workOrder.isCompleted ? t("completed") : t("notCompleted")}
+              </Button>
+              <Button
+                variant={workOrder.isPaid ? "success" : "outline"}
+                size="sm"
+                className="gap-1.5"
+                onClick={handleTogglePaid}
+              >
+                <DollarSign className="h-4 w-4" />
+                {workOrder.isPaid ? t("paid") : t("notPaid")}
+              </Button>
+            </div>
+            {workOrder.completedAt && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {t("completedAt", { date: formatDateTime(workOrder.completedAt, locale) })}
+              </p>
+            )}
+            {workOrder.paidAt && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {t("paidAt", { date: formatDateTime(workOrder.paidAt, locale) })}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <WorkOrderEditor workOrder={workOrder} company={company} onSaved={() => router.refresh()} />
 

@@ -75,30 +75,40 @@ export function WorkOrdersList({ rows }: { rows: Row[] }) {
         <EmptyState icon={FileText} title={tApp("empty")} />
       ) : (
         <div className="space-y-2">
-          {filtered.map((wo) => (
-            <Link key={wo.id} href={`/work-orders/${wo.id}`}>
-              <Card className="glow-hover flex flex-wrap items-center justify-between gap-3 p-3">
-                <div className="flex items-center gap-3">
-                  <FileText className="h-4 w-4 shrink-0 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{wo.title}</p>
-                    <p className="text-xs text-muted-foreground">{wo.number} · {wo.client.name} · {formatDate(wo.date, locale)}</p>
+          {filtered.map((wo) => {
+            const isFullyComplete = wo.isCompleted && wo.isPaid;
+            const isDoneUnpaid = wo.isCompleted && !wo.isPaid;
+            
+            return (
+              <Link key={wo.id} href={`/work-orders/${wo.id}`}>
+                <Card className="glow-hover flex flex-wrap items-center justify-between gap-3 p-3">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-4 w-4 shrink-0 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{wo.title}</p>
+                      <p className="text-xs text-muted-foreground">{wo.number} · {wo.client.name} · {formatDate(wo.date, locale)}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-primary text-telemetry">{formatMoney(wo.totalAmount, locale)}</span>
-                  <Badge variant="outline" className="gap-1">
-                    <StatusDot status={wo.status} /> {t(`statuses.${wo.status}`)}
-                  </Badge>
-                  {wo.isPaid && (
-                    <Badge variant="success" className="gap-1">
-                      <DollarSign className="h-3 w-3" /> {t("paid")}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-primary text-telemetry">{formatMoney(wo.totalAmount, locale)}</span>
+                    <Badge variant="outline" className="gap-1">
+                      <StatusDot status={wo.status} /> {t(`statuses.${wo.status}`)}
                     </Badge>
-                  )}
-                </div>
-              </Card>
-            </Link>
-          ))}
+                    {isFullyComplete && (
+                      <Badge variant="success" className="gap-1">
+                        <DollarSign className="h-3 w-3" /> {t("paid")}
+                      </Badge>
+                    )}
+                    {isDoneUnpaid && wo.status === "signed" && (
+                      <Badge variant="warning" className="gap-1">
+                        <DollarSign className="h-3 w-3" /> {t("notPaid")}
+                      </Badge>
+                    )}
+                  </div>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

@@ -373,7 +373,7 @@
     "completedAt": "Выполнено {date}",
     "paidAt": "Оплачено {date}",
     "paidFolder": "Оплаченные",
-    "paidFolderSubtitle": "Оплаченные акты работ",
+    "paidFolderSubtitle": "Выполненные и оплаченные акты работ",
     "opsStatus": "Операционный статус"
   },
   "voice": {
