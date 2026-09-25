@@ -4,20 +4,32 @@ import { workOrders } from "@/db/schema";
 import { and, eq, or } from "drizzle-orm";
 import { sendPushToAll } from "@/lib/push";
 
-export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 /**
  * Morning digest push notification (Asia/Jerusalem ~08:00)
+ * 
+ * Schedule: 0 5 * * * (05:00 UTC)
+ * - During IDT (daylight time, ~Mar-Oct, UTC+3): 08:00 local
+ * - During IST (standard time, ~Nov-Feb, UTC+2): 07:00 local
+ * 
+ * Note: Vercel cron uses UTC and does not support timezone-aware schedules.
+ * The 05:00 UTC slot was chosen to hit 08:00 during the business-heavy months (IDT).
+ * 
  * Focuses on unpaid items, especially done+unpaid (work completed but payment pending).
- * Secured with CRON_SECRET env var.
+ * Secured with CRON_SECRET env var (fail-closed: rejects if missing).
  */
 export async function GET(request: NextRequest) {
-  // Verify cron secret
+  // Verify cron secret (fail-closed: require CRON_SECRET to be set)
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    console.error("[morning-digest] CRON_SECRET not configured");
+    return NextResponse.json({ error: "Service misconfigured" }, { status: 500 });
+  }
+
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

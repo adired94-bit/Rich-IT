@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { toast } from "sonner";
-import { ArrowRight, Send, Ban, Download, MessageCircle, Link2, FileCheck2, FileClock, FilePlus, FileX, Eye, CheckCircle2, Circle, DollarSign } from "lucide-react";
+import { ArrowRight, Send, Ban, Download, MessageCircle, Link2, FileCheck2, FileClock, FilePlus, FileX, Eye, CheckCircle2, Circle, DollarSign, CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -187,7 +187,7 @@ export function WorkOrderDetail({
             <p className="mb-3 text-sm font-semibold text-foreground">{t("opsStatus")}</p>
             <div className="flex flex-wrap gap-3">
               <Button
-                variant={workOrder.isCompleted ? "default" : "outline"}
+                variant={workOrder.isCompleted ? "success" : "outline"}
                 size="sm"
                 className="gap-1.5"
                 onClick={handleToggleCompleted}
@@ -201,7 +201,7 @@ export function WorkOrderDetail({
                 className="gap-1.5"
                 onClick={handleTogglePaid}
               >
-                <DollarSign className="h-4 w-4" />
+                {workOrder.isPaid ? <DollarSign className="h-4 w-4" /> : <CircleAlert className="h-4 w-4" />}
                 {workOrder.isPaid ? t("paid") : t("notPaid")}
               </Button>
             </div>

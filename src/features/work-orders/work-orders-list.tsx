@@ -3,7 +3,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { Search, Plus, FileText, DollarSign } from "lucide-react";
+import { Search, Plus, FileText, DollarSign, CheckCircle2, CircleAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -100,9 +100,14 @@ export function WorkOrdersList({ rows }: { rows: Row[] }) {
                       </Badge>
                     )}
                     {isDoneUnpaid && wo.status === "signed" && (
-                      <Badge variant="warning" className="gap-1">
-                        <DollarSign className="h-3 w-3" /> {t("notPaid")}
-                      </Badge>
+                      <>
+                        <Badge variant="success" className="gap-1">
+                          <CheckCircle2 className="h-3 w-3" /> {t("completed")}
+                        </Badge>
+                        <Badge variant="warning" className="gap-1">
+                          <CircleAlert className="h-3 w-3" /> {t("notPaid")}
+                        </Badge>
+                      </>
                     )}
                   </div>
                 </Card>
