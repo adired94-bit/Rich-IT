@@ -77,6 +77,7 @@
     "title": "Вход в систему",
     "subtitle": "Rich IT Solutions — CRM и управление сервисом",
     "email": "Email",
+    "emailPlaceholder": "name@company.com",
     "password": "Пароль",
     "signIn": "Войти",
     "signingIn": "Вход...",
