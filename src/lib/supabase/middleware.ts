@@ -8,6 +8,7 @@ const PUBLIC_PREFIXES = [
   "/api/approve",
   "/api/calendar/ics",
   "/api/health",
+  "/api/cron",
   "/manifest.webmanifest",
   "/sw.js",
   "/icons",
