@@ -7,13 +7,24 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusDot } from "@/components/ui/status-dot";
 import { EmptyState } from "@/components/shared/empty-state";
-import { formatDate, formatTime } from "@/lib/utils";
+import { formatDate, formatTime, cn } from "@/lib/utils";
+import { hebrewDateShort, type HolidayInfo } from "@/lib/hebrew-calendar";
 import type { Locale } from "@/i18n/config";
 import type { CalendarEvent } from "@/db/schema";
 
 type EventWithClient = CalendarEvent & { client: { id: string; name: string } | null };
 
-export function AgendaView({ events, locale, onEventClick }: { events: EventWithClient[]; locale: Locale; onEventClick: (e: EventWithClient) => void }) {
+export function AgendaView({
+  events,
+  holidays,
+  locale,
+  onEventClick,
+}: {
+  events: EventWithClient[];
+  holidays: HolidayInfo[];
+  locale: Locale;
+  onEventClick: (e: EventWithClient) => void;
+}) {
   const t = useTranslations("calendar");
   const tApp = useTranslations("app");
 
@@ -32,9 +43,20 @@ export function AgendaView({ events, locale, onEventClick }: { events: EventWith
 
   return (
     <div className="space-y-5">
-      {groups.map((g) => (
+      {groups.map((g) => {
+        const dayHolidays = holidays.filter((h) => isSameDay(h.date, g.day));
+        return (
         <div key={g.day.toISOString()}>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{formatDate(g.day, locale, { weekday: "long", day: "2-digit", month: "2-digit" })}</p>
+          <div className="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{formatDate(g.day, locale, { weekday: "long", day: "2-digit", month: "2-digit" })}</p>
+            <p className="text-[10px] text-muted-foreground">{hebrewDateShort(g.day)}</p>
+            {dayHolidays.map((h, i) => (
+              <span key={i} className={cn("text-[10px] font-medium", h.isMajor ? "text-primary" : "text-muted-foreground")}>
+                {h.emoji ? `${h.emoji} ` : ""}
+                {locale === "he" ? h.titleHe : h.titleEn}
+              </span>
+            ))}
+          </div>
           <div className="space-y-2">
             {g.items.map((ev) => (
               <Card key={ev.id} className="glow-hover flex cursor-pointer items-center justify-between gap-3 p-3" onClick={() => onEventClick(ev)}>
@@ -54,7 +76,8 @@ export function AgendaView({ events, locale, onEventClick }: { events: EventWith
             ))}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

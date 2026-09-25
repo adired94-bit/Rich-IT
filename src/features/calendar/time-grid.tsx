@@ -4,6 +4,7 @@ import { isSameDay, isToday } from "date-fns";
 import { cn } from "@/lib/utils";
 import { EventPill } from "./event-pill";
 import { DAY_START_HOUR, DAY_END_HOUR } from "./calendar-range";
+import { hebrewDateShort, type HolidayInfo } from "@/lib/hebrew-calendar";
 import type { Locale } from "@/i18n/config";
 import type { CalendarEvent } from "@/db/schema";
 
@@ -14,6 +15,7 @@ const HOUR_HEIGHT = 56; // px
 export function TimeGrid({
   days,
   events,
+  holidays,
   locale,
   onSlotClick,
   onEventClick,
@@ -21,6 +23,7 @@ export function TimeGrid({
 }: {
   days: Date[];
   events: EventWithClient[];
+  holidays: HolidayInfo[];
   locale: Locale;
   onSlotClick: (day: Date, hour: number) => void;
   onEventClick: (event: EventWithClient) => void;
@@ -35,6 +38,11 @@ export function TimeGrid({
 
   const allDayEvents = events.filter((e) => e.allDay);
   const timedEvents = events.filter((e) => !e.allDay);
+  const hasHolidays = holidays.length > 0 && days.some((d) => holidays.some((h) => isSameDay(h.date, d)));
+
+  function holidaysForDay(day: Date) {
+    return holidays.filter((h) => isSameDay(h.date, day));
+  }
 
   function layoutFor(day: Date) {
     return timedEvents.filter((e) => isSameDay(new Date(e.startTime), day));
@@ -60,9 +68,30 @@ export function TimeGrid({
             <div className={cn("mx-auto mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-[11px]", isToday(d) && "bg-primary text-primary-foreground font-bold")}>
               {d.getDate()}
             </div>
+            <div className="mt-0.5 truncate px-1 text-[9px] font-normal text-muted-foreground">{hebrewDateShort(d)}</div>
           </div>
         ))}
       </div>
+
+      {/* Holidays row */}
+      {hasHolidays && (
+        <div className="grid border-b border-border bg-primary/5" style={{ gridTemplateColumns: `56px repeat(${days.length}, 1fr)` }}>
+          <div className="border-e border-border" />
+          {days.map((d) => {
+            const dayHolidays = holidaysForDay(d);
+            return (
+              <div key={d.toISOString()} className="space-y-0.5 border-e border-border p-1 text-center last:border-e-0">
+                {dayHolidays.map((h, i) => (
+                  <p key={i} className={cn("truncate text-[10px] font-medium", h.isMajor ? "text-primary" : "text-muted-foreground")}>
+                    {h.emoji ? `${h.emoji} ` : ""}
+                    {locale === "he" ? h.titleHe : h.titleEn}
+                  </p>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* All-day row */}
       {allDayEvents.length > 0 && (

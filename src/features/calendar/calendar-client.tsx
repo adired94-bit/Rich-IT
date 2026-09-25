@@ -15,6 +15,7 @@ import { AgendaView } from "./agenda-view";
 import { EventFormDialog } from "./event-form-dialog";
 import { fetchEventsAction, moveEventAction } from "@/server/actions/calendar";
 import { getRange, shiftAnchor, weekDays, type CalendarView } from "./calendar-range";
+import { getHolidaysInRange } from "@/lib/hebrew-calendar";
 import { formatDate } from "@/lib/utils";
 import type { Locale } from "@/i18n/config";
 import type { CalendarEvent } from "@/db/schema";
@@ -37,6 +38,7 @@ export function CalendarClient({ clients, icsUrl }: { clients: ClientOption[]; i
   const [icsOpen, setIcsOpen] = React.useState(false);
 
   const range = React.useMemo(() => getRange(view, anchor), [view, anchor]);
+  const holidays = React.useMemo(() => getHolidaysInRange(range.start, range.end), [range]);
   const queryKey = ["calendar-events", range.start.toISOString(), range.end.toISOString(), clientFilter];
 
   const { data: events = [], isFetching } = useQuery({
@@ -139,6 +141,7 @@ export function CalendarClient({ clients, icsUrl }: { clients: ClientOption[]; i
         <MonthView
           anchor={anchor}
           events={events}
+          holidays={holidays}
           locale={locale}
           onDayClick={(day) => openNew(day)}
           onEventClick={openEdit}
@@ -149,6 +152,7 @@ export function CalendarClient({ clients, icsUrl }: { clients: ClientOption[]; i
         <TimeGrid
           days={weekDays(anchor)}
           events={events}
+          holidays={holidays}
           locale={locale}
           onSlotClick={(day, hour) => { const d = new Date(day); d.setHours(hour, 0, 0, 0); openNew(d); }}
           onEventClick={openEdit}
@@ -159,13 +163,14 @@ export function CalendarClient({ clients, icsUrl }: { clients: ClientOption[]; i
         <TimeGrid
           days={[anchor]}
           events={events}
+          holidays={holidays}
           locale={locale}
           onSlotClick={(day, hour) => { const d = new Date(day); d.setHours(hour, 0, 0, 0); openNew(d); }}
           onEventClick={openEdit}
           onEventDrop={(id, day, hour) => handleDrop(id, day, hour)}
         />
       )}
-      {view === "agenda" && <AgendaView events={events} locale={locale} onEventClick={openEdit} />}
+      {view === "agenda" && <AgendaView events={events} holidays={holidays} locale={locale} onEventClick={openEdit} />}
 
       <EventFormDialog
         open={formOpen}
