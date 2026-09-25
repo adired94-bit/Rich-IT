@@ -13,6 +13,8 @@ const PUBLIC_PREFIXES = [
   "/icons",
   "/fonts",
   "/offline",
+  "/robots.txt",
+  "/sitemap.xml",
 ];
 
 export async function updateSession(request: NextRequest) {
