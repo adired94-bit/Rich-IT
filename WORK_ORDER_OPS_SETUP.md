@@ -28,14 +28,16 @@ This document describes how to deploy and test the new operational status workfl
 - Full Hebrew/Russian i18n support
 
 ### 3. Morning Push Notification (Unpaid Focus)
-- Vercel Cron job at 08:00 Asia/Jerusalem (05:00 UTC)
+- Vercel Cron job: `0 5 * * *` (05:00 UTC)
+  - **IDT** (daylight, ~Mar-Oct, UTC+3): **08:00** local ✅
+  - **IST** (standard, ~Nov-Feb, UTC+2): **07:00** local
 - Targets signed work orders where `is_paid = false`
 - **Prioritizes done+unpaid** (work finished, payment pending)
 - Message: "יש X שבוצעו ולא שולמו, ועוד Y שטרם שולמו"
 - Deep-links to `/work-orders` (warning badges visible on done+unpaid)
 - PWA device push only (no email, no WhatsApp)
+- **Auth**: Fail-closed with `CRON_SECRET` (refuses to run if missing)
 - Uses existing Serwist/Web Push infrastructure
-- Graceful no-op if VAPID keys not configured
 
 ## Database Migration
 
@@ -84,6 +86,8 @@ Add to Vercel project settings (Settings → Environment Variables):
 ```bash
 CRON_SECRET=<generate-secure-random-string>
 ```
+
+**IMPORTANT:** The cron endpoint is **fail-closed**. If `CRON_SECRET` is missing or empty, the endpoint returns 500 and refuses to execute. Never deploy to production without setting this variable.
 
 Generate a secure secret:
 ```bash
@@ -368,7 +372,10 @@ A: The cron runs successfully but silently skips sending push (same as current b
 A: Yes. Remove the cron entry from `vercel.json` and redeploy. Or set a bogus CRON_SECRET to block execution.
 
 **Q: What timezone is the cron in?**  
-A: UTC. The schedule `0 5 * * *` is 05:00 UTC, which equals 08:00 Asia/Jerusalem (UTC+3).
+A: UTC (Vercel crons are UTC-only). The schedule `0 5 * * *` equals:
+- 08:00 during IDT (daylight time, ~Mar-Oct, UTC+3) ✅
+- 07:00 during IST (standard time, ~Nov-Feb, UTC+2)
+The 05:00 UTC slot was chosen to hit 08:00 during the business-heavy season.
 
 **Q: Does the paid folder show cancelled work orders?**  
 A: No. Only signed work orders with BOTH `isCompleted=true AND isPaid=true` appear in the folder.
