@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, requireUser } from "@/lib/supabase/server";
-import { updateCompanySettings, updateAiKeys, clearAiKeys } from "@/server/queries/settings";
+import { updateCompanySettings, updateAiKeys, clearAiKeys, updateOwnerSignature, clearOwnerSignature } from "@/server/queries/settings";
 import { companySettingsSchema, aiKeysSchema } from "@/lib/validators/settings";
 import type { z } from "zod";
 
@@ -40,5 +40,20 @@ export async function updateAiKeysAction(password: string, raw: z.infer<typeof a
 export async function clearAiKeysAction(password: string) {
   await assertPassword(password);
   await clearAiKeys();
+  revalidatePath("/settings");
+}
+
+export async function updateOwnerSignatureAction(dataUrl: string) {
+  await requireUser();
+  if (!dataUrl.startsWith("data:image/") || dataUrl.length > 500_000) {
+    throw new Error("INVALID_SIGNATURE");
+  }
+  await updateOwnerSignature(dataUrl);
+  revalidatePath("/settings");
+}
+
+export async function clearOwnerSignatureAction() {
+  await requireUser();
+  await clearOwnerSignature();
   revalidatePath("/settings");
 }

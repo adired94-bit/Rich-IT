@@ -25,7 +25,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${workOrder.number}.pdf"`,
+      "Content-Disposition": `attachment; filename="${workOrder.number}.pdf"`,
       "Cache-Control": "private, no-store",
     },
   });

@@ -20,7 +20,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ tok
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${workOrder.number}.pdf"`,
+      // "attachment" (not "inline"): on mobile browsers, opening a PDF inline
+      // hands off to the OS/browser's own viewer, whose UI varies wildly (on
+      // some Android setups the only visible option is "Save to Drive," with
+      // no obvious download button) — forcing a real download is consistent
+      // everywhere and matches the button's "Download PDF" label.
+      "Content-Disposition": `attachment; filename="${workOrder.number}.pdf"`,
       "Cache-Control": "private, no-store",
     },
   });

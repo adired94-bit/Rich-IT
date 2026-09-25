@@ -8,13 +8,33 @@ import type { CompanySettingsInput, AiKeysInput } from "@/lib/validators/setting
 
 const COMPANY_KEY = "company";
 const AI_KEYS_KEY = "aiKeys";
+const OWNER_SIGNATURE_KEY = "ownerSignature";
 
-export type CompanySettings = typeof companyDefaults;
+export type CompanySettings = typeof companyDefaults & { ownerSignatureUrl: string | null };
+
+export async function getOwnerSignature(): Promise<string | null> {
+  const row = await db.query.appSettings.findFirst({ where: eq(appSettings.key, OWNER_SIGNATURE_KEY) });
+  return (row?.value as { dataUrl?: string } | undefined)?.dataUrl ?? null;
+}
+
+export async function updateOwnerSignature(dataUrl: string): Promise<void> {
+  await db
+    .insert(appSettings)
+    .values({ key: OWNER_SIGNATURE_KEY, value: { dataUrl } })
+    .onConflictDoUpdate({ target: appSettings.key, set: { value: { dataUrl }, updatedAt: new Date() } });
+}
+
+export async function clearOwnerSignature(): Promise<void> {
+  await db.delete(appSettings).where(eq(appSettings.key, OWNER_SIGNATURE_KEY));
+}
 
 export async function getCompanySettings(): Promise<CompanySettings> {
-  const row = await db.query.appSettings.findFirst({ where: eq(appSettings.key, COMPANY_KEY) });
+  const [row, ownerSignatureUrl] = await Promise.all([
+    db.query.appSettings.findFirst({ where: eq(appSettings.key, COMPANY_KEY) }),
+    getOwnerSignature(),
+  ]);
   const overrides = (row?.value ?? {}) as Partial<CompanySettingsInput>;
-  return { ...companyDefaults, ...overrides };
+  return { ...companyDefaults, ...overrides, ownerSignatureUrl };
 }
 
 export async function updateCompanySettings(data: CompanySettingsInput): Promise<void> {

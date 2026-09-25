@@ -2,7 +2,7 @@
 import * as React from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Bell, BellOff, Building2, Cable, Copy, Download, KeyRound, Loader2, Pencil, Sparkles, Trash2 } from "lucide-react";
+import { Bell, BellOff, Building2, Cable, Copy, Download, KeyRound, Loader2, Pencil, PenLine, Sparkles, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,8 +19,16 @@ import {
 } from "@/components/ui/dialog";
 import { seedCatalogAction } from "@/server/actions/catalog";
 import { subscribePushAction, unsubscribePushAction } from "@/server/actions/push";
-import { updateCompanySettingsAction, verifyPasswordAction, updateAiKeysAction, clearAiKeysAction } from "@/server/actions/settings";
+import {
+  updateCompanySettingsAction,
+  verifyPasswordAction,
+  updateAiKeysAction,
+  clearAiKeysAction,
+  updateOwnerSignatureAction,
+  clearOwnerSignatureAction,
+} from "@/server/actions/settings";
 import { isPushSupported, getExistingPushSubscription, subscribeToPush, unsubscribeFromPush } from "@/lib/push-client";
+import { SignaturePad, type SignaturePadHandle } from "@/features/approval/signature-pad";
 import type { CompanySettings } from "@/server/queries/settings";
 
 interface Status {
@@ -123,6 +131,8 @@ export function SettingsClient({
   return (
     <div className="space-y-4">
       <CompanyCard company={company} />
+
+      <SignatureCard initialSignatureUrl={company.ownerSignatureUrl} />
 
       <Card>
         <CardContent className="pt-5">
@@ -295,6 +305,91 @@ function Field({ label, className, children }: { label: string; className?: stri
       <Label className="mb-1.5 block text-xs text-muted-foreground">{label}</Label>
       {children}
     </div>
+  );
+}
+
+/* ------------------------------ Owner signature ------------------------------ */
+
+function SignatureCard({ initialSignatureUrl }: { initialSignatureUrl: string | null }) {
+  const t = useTranslations("settings");
+  const tApp = useTranslations("app");
+  const [signatureUrl, setSignatureUrl] = React.useState(initialSignatureUrl);
+  const [editing, setEditing] = React.useState(!initialSignatureUrl);
+  const [saving, setSaving] = React.useState(false);
+  const padRef = React.useRef<SignaturePadHandle>(null);
+
+  async function handleSave() {
+    const dataUrl = padRef.current?.getDataUrl();
+    if (!dataUrl) {
+      toast.error(t("signatureRequired"));
+      return;
+    }
+    setSaving(true);
+    try {
+      await updateOwnerSignatureAction(dataUrl);
+      setSignatureUrl(dataUrl);
+      setEditing(false);
+      toast.success(tApp("saved"));
+    } catch {
+      toast.error(tApp("error"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleClear() {
+    setSaving(true);
+    try {
+      await clearOwnerSignatureAction();
+      setSignatureUrl(null);
+      setEditing(true);
+      toast.success(tApp("deleted"));
+    } catch {
+      toast.error(tApp("error"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardContent className="space-y-3 pt-5">
+        <div className="flex items-center justify-between">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            <PenLine className="h-4 w-4 text-primary" /> {t("mySignature")}
+          </p>
+          {!editing && signatureUrl && (
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setEditing(true)}>
+              <Pencil className="h-3.5 w-3.5" /> {tApp("edit")}
+            </Button>
+          )}
+        </div>
+        <p className="text-[11px] text-muted-foreground">{t("mySignatureHint")}</p>
+
+        {!editing && signatureUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- a saved data: URL, not an optimizable remote image
+          <img src={signatureUrl} alt="" className="h-20 rounded-lg border border-border bg-white object-contain px-3" />
+        ) : (
+          <div className="space-y-2">
+            <SignaturePad ref={padRef} label={t("signHere")} clearLabel={tApp("cancel")} />
+            <div className="flex justify-end gap-2">
+              {signatureUrl && (
+                <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={saving}>
+                  {tApp("cancel")}
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" className="gap-1.5 text-destructive" onClick={handleClear} disabled={saving}>
+                <Trash2 className="h-3.5 w-3.5" /> {tApp("delete")}
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {tApp("save")}
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

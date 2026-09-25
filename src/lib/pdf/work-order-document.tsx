@@ -214,6 +214,10 @@ function LanguageSection({ wo, lang, company }: { wo: WorkOrderWithRelations; la
           )}
         </View>
         <View style={styles.signBox}>
+          {company.ownerSignatureUrl && (
+            // eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/renderer's Image is a PDF drawing primitive, not an HTML <img>; it has no alt prop.
+            <Image src={company.ownerSignatureUrl} style={styles.signImage} />
+          )}
           <Text style={[styles.signLabel, dir]}>{t.engineerSignature}{wo.performerName ? ` — ${wo.performerName}` : ""}</Text>
         </View>
       </View>
