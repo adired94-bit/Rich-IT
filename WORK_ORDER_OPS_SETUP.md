@@ -36,7 +36,7 @@ This document describes how to deploy and test the new operational status workfl
 - Message: "יש X שבוצעו ולא שולמו, ועוד Y שטרם שולמו"
 - Deep-links to `/work-orders` (warning badges visible on done+unpaid)
 - PWA device push only (no email, no WhatsApp)
-- **Auth**: Fail-closed with `CRON_SECRET` (refuses to run if missing)
+- **Auth**: Fail-closed with `CRON_SECRET` (returns 401 if missing/invalid)
 - Uses existing Serwist/Web Push infrastructure
 
 ## Database Migration
@@ -87,7 +87,7 @@ Add to Vercel project settings (Settings → Environment Variables):
 CRON_SECRET=<generate-secure-random-string>
 ```
 
-**IMPORTANT:** The cron endpoint is **fail-closed**. If `CRON_SECRET` is missing or empty, the endpoint returns 500 and refuses to execute. Never deploy to production without setting this variable.
+**IMPORTANT:** The cron endpoint is **fail-closed**. If `CRON_SECRET` is missing or empty, the endpoint returns 401 Unauthorized and refuses to execute. Never deploy to production without setting this variable.
 
 Generate a secure secret:
 ```bash
