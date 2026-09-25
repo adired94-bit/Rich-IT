@@ -234,6 +234,12 @@ export const workOrders = pgTable(
     sentAt: timestamp("sent_at", { withTimezone: true }),
     viewedAt: timestamp("viewed_at", { withTimezone: true }),
     signedAt: timestamp("signed_at", { withTimezone: true }),
+    /** Ops: work completed (בוצע) */
+    isCompleted: boolean("is_completed").default(false).notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    /** Ops: payment received (שולם) */
+    isPaid: boolean("is_paid").default(false).notNull(),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [
@@ -242,6 +248,7 @@ export const workOrders = pgTable(
     index("work_orders_client_idx").on(t.clientId),
     index("work_orders_status_idx").on(t.status),
     index("work_orders_date_idx").on(t.date),
+    index("work_orders_is_paid_idx").on(t.isPaid),
   ],
 );
 

@@ -361,7 +361,20 @@
     "noClientDetected": "לא זוהה לקוח — בחרו לקוח",
     "detectedClient": "לקוח שזוהה",
     "retainerHours": "לחייב מבנק השעות",
-    "retainerDeduct": "{hours} שעות ינוכו מהריטיינר"
+    "retainerDeduct": "{hours} שעות ינוכו מהריטיינר",
+    "completed": "בוצע",
+    "notCompleted": "לא בוצע",
+    "paid": "שולם",
+    "notPaid": "לא שולם",
+    "markCompleted": "סימון כבוצע",
+    "markNotCompleted": "סימון כלא בוצע",
+    "markPaid": "סימון כשולם",
+    "markNotPaid": "סימון כלא שולם",
+    "completedAt": "בוצע ב-{date}",
+    "paidAt": "שולם ב-{date}",
+    "paidFolder": "שולמו",
+    "paidFolderSubtitle": "דפי שירות ששולמו",
+    "opsStatus": "סטטוס תפעולי"
   },
   "voice": {
     "record": "הקלטה",

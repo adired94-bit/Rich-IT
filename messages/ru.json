@@ -361,7 +361,20 @@
     "noClientDetected": "Клиент не распознан — выберите клиента",
     "detectedClient": "Распознанный клиент",
     "retainerHours": "Списать из банка часов",
-    "retainerDeduct": "{hours} ч будут списаны с абонемента"
+    "retainerDeduct": "{hours} ч будут списаны с абонемента",
+    "completed": "Выполнено",
+    "notCompleted": "Не выполнено",
+    "paid": "Оплачено",
+    "notPaid": "Не оплачено",
+    "markCompleted": "Отметить как выполнено",
+    "markNotCompleted": "Отметить как не выполнено",
+    "markPaid": "Отметить как оплачено",
+    "markNotPaid": "Отметить как не оплачено",
+    "completedAt": "Выполнено {date}",
+    "paidAt": "Оплачено {date}",
+    "paidFolder": "Оплаченные",
+    "paidFolderSubtitle": "Оплаченные акты работ",
+    "opsStatus": "Операционный статус"
   },
   "voice": {
     "record": "Запись",

@@ -3,10 +3,11 @@ import { db } from "@/db";
 import { workOrders, workOrderItems } from "@/db/schema";
 import { and, desc, eq, gte, ilike, or, sql } from "drizzle-orm";
 
-export async function listWorkOrders(opts?: { status?: string; clientId?: string; search?: string }) {
+export async function listWorkOrders(opts?: { status?: string; clientId?: string; search?: string; isPaid?: boolean }) {
   const conditions = [];
   if (opts?.status && opts.status !== "all") conditions.push(eq(workOrders.status, opts.status as (typeof workOrders.status.enumValues)[number]));
   if (opts?.clientId) conditions.push(eq(workOrders.clientId, opts.clientId));
+  if (opts?.isPaid !== undefined) conditions.push(eq(workOrders.isPaid, opts.isPaid));
   if (opts?.search) {
     const q = `%${opts.search}%`;
     conditions.push(or(ilike(workOrders.number, q), ilike(workOrders.title, q)));

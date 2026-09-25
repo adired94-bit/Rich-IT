@@ -1,8 +1,9 @@
 "use client";
 import * as React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { Search, Plus, FileText } from "lucide-react";
+import { Search, Plus, FileText, DollarSign } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ export function WorkOrdersList({ rows }: { rows: Row[] }) {
   const t = useTranslations("workOrders");
   const tApp = useTranslations("app");
   const locale = useLocale() as Locale;
+  const pathname = usePathname();
   const [search, setSearch] = React.useState("");
   const [status, setStatus] = React.useState("all");
 
@@ -33,8 +35,23 @@ export function WorkOrdersList({ rows }: { rows: Row[] }) {
     });
   }, [rows, search, status]);
 
+  const isPaidFolder = pathname?.includes("/paid");
+
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <Button asChild variant={!isPaidFolder ? "default" : "outline"} size="sm" className="gap-1.5">
+          <Link href="/work-orders">
+            <FileText className="h-4 w-4" /> {t("title")}
+          </Link>
+        </Button>
+        <Button asChild variant={isPaidFolder ? "success" : "outline"} size="sm" className="gap-1.5">
+          <Link href="/work-orders/paid">
+            <DollarSign className="h-4 w-4" /> {t("paidFolder")}
+          </Link>
+        </Button>
+      </div>
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -73,6 +90,11 @@ export function WorkOrdersList({ rows }: { rows: Row[] }) {
                   <Badge variant="outline" className="gap-1">
                     <StatusDot status={wo.status} /> {t(`statuses.${wo.status}`)}
                   </Badge>
+                  {wo.isPaid && (
+                    <Badge variant="success" className="gap-1">
+                      <DollarSign className="h-3 w-3" /> {t("paid")}
+                    </Badge>
+                  )}
                 </div>
               </Card>
             </Link>
