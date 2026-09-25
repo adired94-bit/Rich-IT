@@ -2,27 +2,39 @@
 
 This document describes how to deploy and test the new operational status workflow for Rich-IT work orders.
 
+## ✅ Product Rules (Adir-Approved)
+
+1. **Ops toggles AFTER signature only** — Visible only when work order status = `signed`
+2. **Clear visual display** — Done+unpaid items show warning badge (high priority)
+3. **«שולמו» folder = BOTH done AND paid** — Requires `isCompleted=true AND isPaid=true`
+4. **Morning PWA push only** — Targets unpaid, prioritizes done+unpaid, no email/WhatsApp
+5. **Draft PR, no merge** — Vercel settings untouched
+
 ## Features Implemented
 
-### 1. Completion & Payment Toggles
-- Each work order detail page now shows an "Ops Status" card
+### 1. Completion & Payment Toggles (After Signature)
+- Ops Status card appears ONLY when work order `status = 'signed'`
 - **בוצע / לא בוצע** toggle (Completed / Not Completed) with checkbox icon
 - **שולם / לא שולם** toggle (Paid / Not Paid) with dollar icon
 - Timestamps shown when status changes
-- Independent of document lifecycle status (draft → sent → signed)
+- Independent booleans track operational status separately from document lifecycle
 
-### 2. Paid Folder
+### 2. Paid Folder (BOTH Required)
 - New route: `/work-orders/paid`
 - Navigation buttons on work orders list page
-- Shows only work orders where `is_paid = true`
-- Paid badge visible on list items
+- Shows ONLY work orders where **`is_completed = true AND is_paid = true`**
+- Items must be fully complete to enter folder
+- Clear visual badges distinguish fully complete vs done+unpaid
 - Full Hebrew/Russian i18n support
 
-### 3. Morning Push Notification
+### 3. Morning Push Notification (Unpaid Focus)
 - Vercel Cron job at 08:00 Asia/Jerusalem (05:00 UTC)
-- Summarizes incomplete and/or unpaid work orders
-- Deep-links to `/work-orders` when tapped
-- Uses existing push infrastructure
+- Targets signed work orders where `is_paid = false`
+- **Prioritizes done+unpaid** (work finished, payment pending)
+- Message: "יש X שבוצעו ולא שולמו, ועוד Y שטרם שולמו"
+- Deep-links to `/work-orders` (warning badges visible on done+unpaid)
+- PWA device push only (no email, no WhatsApp)
+- Uses existing Serwist/Web Push infrastructure
 - Graceful no-op if VAPID keys not configured
 
 ## Database Migration
@@ -94,44 +106,64 @@ npx web-push generate-vapid-keys
 
 ## Testing Checklist
 
-### ✅ Test Ops Toggles
+### ✅ Test Ops Toggles (After Signature)
 
-1. Navigate to any work order detail page: `/work-orders/[id]`
-2. Locate the "סטטוס תפעולי" / "Операционный статус" card
-3. Click "לא בוצע" button
+**Prerequisites:** Work order must have `status = 'signed'` (client approved/signed)
+
+1. Navigate to a **signed** work order: `/work-orders/[id]`
+2. If status is NOT "signed", ops status card should NOT appear
+3. Once signed, locate the "סטטוס תפעולי" / "Операционный статус" card
+4. Click "לא בוצע" button
    - Should toggle to "בוצע" with green checkmark
    - Should show "בוצע ב-[timestamp]" below
-4. Click "בוצע" button again
+5. Click "בוצע" button again
    - Should toggle back to "לא בוצע" with empty circle
    - Timestamp should disappear
-5. Click "לא שולם" button
+6. Click "לא שולם" button
    - Should toggle to "שולם" with green badge
    - Should show "שולם ב-[timestamp]" below
-6. Click "שולם" button again
+7. Click "שולם" button again
    - Should toggle back to "לא שולם"
    - Timestamp should disappear
 
-### ✅ Test Paid Folder
+### ✅ Test Paid Folder (BOTH Required)
 
-1. Mark at least one work order as paid (see above)
+1. Create test scenario:
+   - Work order A: signed, `isCompleted=true`, `isPaid=true` ✅
+   - Work order B: signed, `isCompleted=true`, `isPaid=false` ❌
+   - Work order C: signed, `isCompleted=false`, `isPaid=true` ❌
 2. Navigate to `/work-orders` main page
 3. Should see two folder buttons:
    - "דפי שירות" (All work orders)
-   - "שולמו" (Paid)
+   - "שולמו" (Completed AND paid)
 4. Click "שולמו" button
    - URL should change to `/work-orders/paid`
-   - List should show only paid work orders
-   - Each item should have green "שולם" badge
+   - List should show ONLY work order A (both conditions true)
+   - Work orders B and C should NOT appear
 5. Click "דפי שירות" button
    - Should return to `/work-orders`
    - List should show all work orders
+
+### ✅ Test Visual Display (Done+Unpaid Priority)
+
+1. Create work order: signed, mark "בוצע" but NOT "שולם"
+2. View in main work orders list
+3. Should show **warning "לא שולם" badge** (orange/yellow)
+4. This visually highlights high-priority items (work done, payment pending)
+5. Mark as "שולם"
+6. Badge should change to green "שולם"
+7. Item should now appear in "שולמו" folder
 
 ### ✅ Test Morning Digest (Local)
 
 **Prerequisites:** 
 - VAPID keys configured
 - At least one push subscription active (enable in Settings → Push notifications)
-- At least one work order that is not completed or not paid
+- At least one **signed** work order where `isPaid = false`
+
+**Setup test scenario:**
+- Work order A: signed, `isCompleted=true`, `isPaid=false` (done+unpaid = high priority)
+- Work order B: signed, `isCompleted=false`, `isPaid=false` (not done, unpaid)
 
 **Manual trigger:**
 ```bash
@@ -148,17 +180,20 @@ curl -H "Authorization: Bearer your-secret-here" \
 {
   "ok": true,
   "sent": true,
-  "notCompleted": 2,
-  "notPaid": 3,
-  "total": 4
+  "doneUnpaid": 1,
+  "notDoneUnpaid": 1,
+  "totalUnpaid": 2
 }
 ```
 
 **Expected behavior:**
 - Push notification should appear on device/browser
 - Title: "Rich IT — בוקר טוב"
-- Body: "יש X דפי שירות שטרם בוצעו ו-Y שטרם שולמו"
+- Body: "יש 1 דפי שירות שבוצעו ולא שולמו, ועוד 1 שטרם שולמו"
+  - OR (if only done+unpaid): "יש X דפי שירות שבוצעו וממתינים לתשלום"
+  - OR (if only not-done+unpaid): "יש X דפי שירות שטרם שולמו"
 - Clicking notification should open app to `/work-orders`
+- Warning badges should be visible on done+unpaid items
 
 ### ✅ Test Morning Digest (Production)
 
@@ -253,7 +288,11 @@ Vercel Cron (08:00 IL)
     ↓
 /api/cron/morning-digest
     ↓
-Query: work_orders where (is_completed=false OR is_paid=false)
+Query: work_orders where status='signed' AND isPaid=false
+    ↓
+Count: doneUnpaid (priority) + notDoneUnpaid
+    ↓
+Build message prioritizing done+unpaid
     ↓
 sendPushToAll({ title, body, url: "/work-orders" })
     ↓
@@ -264,7 +303,35 @@ Service Worker receives push
 Shows notification with data.url
     ↓
 User clicks → SW opens /work-orders
+    ↓
+Warning badges visible on done+unpaid items
 ```
+
+## Key Product Rules
+
+### ✅ Rule 1: Ops Toggles After Signature
+Toggles appear ONLY when `status = 'signed'`. This ensures:
+- Price/work is client-approved before operational tracking
+- Clear separation: document lifecycle → ops workflow
+- No premature status tracking on drafts/sent documents
+
+### ✅ Rule 2: Paid Folder = BOTH Conditions
+`«שולמו»` requires `isCompleted=true AND isPaid=true`. This ensures:
+- Folder represents truly finished business (done + paid)
+- Prevents incomplete items from appearing as "closed"
+- Clear milestone: work finished, payment received, case closed
+
+### ✅ Rule 3: Visual Hierarchy
+- ✅ Green "שולם" badge: Fully complete (done + paid)
+- ⚠️ Warning "לא שולם" badge: Done but unpaid (high priority)
+- No badge: Not done yet (normal workflow)
+
+### ✅ Rule 4: Morning Push Priority
+Focus on **unpaid signed work orders**, especially done+unpaid:
+- Priority 1: Work finished, payment pending (done+unpaid)
+- Priority 2: Work and payment both pending
+- Message highlights done+unpaid count first
+- PWA device push only (no email, no WhatsApp)
 
 ## Rollback Plan
 
@@ -289,7 +356,10 @@ git push
 ## FAQ
 
 **Q: Does this change existing work order behavior?**  
-A: No. The document lifecycle (draft → sent → signed) is unchanged. Ops toggles are independent additions.
+A: No. The document lifecycle (draft → sent → signed) is unchanged. Ops toggles are independent additions that appear AFTER signature.
+
+**Q: Why don't ops toggles show on draft/sent work orders?**  
+A: Per Adir's product rules: toggles only appear after client signature. This ensures price/work is approved before operational tracking begins.
 
 **Q: What happens if VAPID keys are missing?**  
 A: The cron runs successfully but silently skips sending push (same as current behavior).
@@ -301,10 +371,16 @@ A: Yes. Remove the cron entry from `vercel.json` and redeploy. Or set a bogus CR
 A: UTC. The schedule `0 5 * * *` is 05:00 UTC, which equals 08:00 Asia/Jerusalem (UTC+3).
 
 **Q: Does the paid folder show cancelled work orders?**  
-A: No. The query excludes cancelled work orders from both folders.
+A: No. Only signed work orders with BOTH `isCompleted=true AND isPaid=true` appear in the folder.
 
-**Q: Can I mark a draft as paid?**  
-A: Yes. The toggles work regardless of document status. This allows tracking payment before/after signing.
+**Q: Can a work order be in the paid folder if only payment is received?**  
+A: No. The folder requires BOTH completed AND paid. Items with only one status do NOT appear.
+
+**Q: Why do some work orders show a warning badge?**  
+A: Warning "לא שולם" badge appears when work is completed but payment is pending (high priority for follow-up).
+
+**Q: Does the morning push include all unpaid items?**  
+A: Yes, but the message prioritizes done+unpaid (work finished, payment pending) to highlight urgent items.
 
 ## Support
 
