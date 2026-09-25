@@ -41,7 +41,7 @@ export async function getAiSettings() {
   return {
     anthropicApiKey: stored?.anthropicApiKey || process.env.ANTHROPIC_API_KEY || "",
     openaiApiKey: stored?.openaiApiKey || process.env.OPENAI_API_KEY || "",
-    claudeModel: stored?.claudeModel || process.env.CLAUDE_MODEL || "claude-opus-5",
+    claudeModel: stored?.claudeModel || process.env.CLAUDE_MODEL || "claude-opus-5-5",
     whisperModel: stored?.whisperModel || process.env.WHISPER_MODEL || "whisper-1",
   };
 }
@@ -63,7 +63,7 @@ export async function getAiKeysStatus() {
     openaiConfigured: Boolean(openaiValue),
     openaiMasked: openaiValue ? maskKey(openaiValue) : null,
     openaiSource: stored?.openaiApiKey ? ("app" as const) : openaiValue ? ("env" as const) : null,
-    claudeModel: stored?.claudeModel || process.env.CLAUDE_MODEL || "claude-opus-5",
+    claudeModel: stored?.claudeModel || process.env.CLAUDE_MODEL || "claude-opus-5-5",
     whisperModel: stored?.whisperModel || process.env.WHISPER_MODEL || "whisper-1",
   };
 }
