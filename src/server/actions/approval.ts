@@ -1,5 +1,11 @@
 "use server";
 
+/**
+ * INTENTIONALLY PUBLIC: Customer approval/signing flow.
+ * These actions are protected by approval tokens, not auth.
+ * Customers must be able to view and sign work orders without logging in.
+ */
+
 import { db } from "@/db";
 import { workOrders, documentEvents } from "@/db/schema";
 import { getWorkOrderByApprovalToken } from "@/server/queries/work-orders";

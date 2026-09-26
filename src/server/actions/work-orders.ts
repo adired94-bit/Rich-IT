@@ -2,6 +2,7 @@
 
 import { db } from "@/db";
 import { workOrders, workOrderItems, retainerUsage, interactionLogs, documentEvents } from "@/db/schema";
+import { requireUser } from "@/lib/supabase/server";
 import { workOrderFormSchema, computeTotals, type WorkOrderFormValues } from "@/lib/validators/work-orders";
 import { nextWorkOrderNumber } from "@/server/queries/work-orders";
 import { eq } from "drizzle-orm";
@@ -12,6 +13,7 @@ function nullIfEmpty(v?: string | null) {
 }
 
 export async function upsertWorkOrderAction(raw: WorkOrderFormValues) {
+  await requireUser();
   const data = workOrderFormSchema.parse(raw);
   const totals = computeTotals(data.items, data.discount, data.vatRate);
 
@@ -103,6 +105,7 @@ export async function upsertWorkOrderAction(raw: WorkOrderFormValues) {
 }
 
 export async function deleteWorkOrderAction(id: string, clientId?: string) {
+  await requireUser();
   await db.delete(workOrders).where(eq(workOrders.id, id));
   revalidatePath("/work-orders");
   if (clientId) revalidatePath(`/clients/${clientId}`);
@@ -110,6 +113,7 @@ export async function deleteWorkOrderAction(id: string, clientId?: string) {
 }
 
 export async function cancelWorkOrderAction(id: string) {
+  await requireUser();
   await db.update(workOrders).set({ status: "cancelled" }).where(eq(workOrders.id, id));
   await db.insert(documentEvents).values({ workOrderId: id, event: "cancelled" });
   revalidatePath("/work-orders");
@@ -118,6 +122,7 @@ export async function cancelWorkOrderAction(id: string) {
 }
 
 export async function markWorkOrderSentAction(id: string) {
+  await requireUser();
   await db.update(workOrders).set({ status: "sent", sentAt: new Date() }).where(eq(workOrders.id, id));
   await db.insert(documentEvents).values({ workOrderId: id, event: "sent" });
   revalidatePath("/work-orders");
@@ -127,6 +132,7 @@ export async function markWorkOrderSentAction(id: string) {
 }
 
 export async function toggleWorkOrderCompletedAction(id: string, isCompleted: boolean) {
+  await requireUser();
   await db
     .update(workOrders)
     .set({ isCompleted, completedAt: isCompleted ? new Date() : null })
@@ -137,6 +143,7 @@ export async function toggleWorkOrderCompletedAction(id: string, isCompleted: bo
 }
 
 export async function toggleWorkOrderPaidAction(id: string, isPaid: boolean) {
+  await requireUser();
   await db
     .update(workOrders)
     .set({ isPaid, paidAt: isPaid ? new Date() : null })
