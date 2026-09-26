@@ -32,7 +32,7 @@ export function LoginForm() {
         return;
       }
       const next = params.get("next") ?? "/";
-      const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
+      const safeNext = next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") && !next.includes("\\") ? next : "/";
       router.push(safeNext);
       router.refresh();
     } finally {
@@ -49,7 +49,7 @@ export function LoginForm() {
     try {
       const supabase = createClient();
       const next = params.get("next") ?? "/";
-      const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
+      const safeNext = next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") && !next.includes("\\") ? next : "/";
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: `${window.location.origin}${safeNext}` },
