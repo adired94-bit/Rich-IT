@@ -2,7 +2,7 @@
 
 import { requireUser } from "@/lib/supabase/server";
 import { db } from "@/db";
-import { clients, services, workOrders, workOrderItems, retainers, retainerUsage, calendarEvents, interactionLogs, documentEvents } from "@/db/schema";
+import { clients, services, workOrders, workOrderItems, retainers, retainerUsage, calendarEvents, interactionLogs, documentEvents, voiceLogs } from "@/db/schema";
 
 interface BackupMetadata {
   exportedAt: string;
@@ -17,6 +17,7 @@ interface BackupMetadata {
     calendarEvents: number;
     interactionLogs: number;
     documentEvents: number;
+    voiceLogs: number;
   };
 }
 
@@ -31,6 +32,7 @@ interface BackupData {
   calendarEvents: unknown[];
   interactionLogs: unknown[];
   documentEvents: unknown[];
+  voiceLogs: unknown[];
 }
 
 export async function exportBackupAction(): Promise<BackupData> {
@@ -46,6 +48,7 @@ export async function exportBackupAction(): Promise<BackupData> {
     calendarEventsData,
     interactionLogsData,
     documentEventsData,
+    voiceLogsData,
   ] = await Promise.all([
     db.select().from(clients),
     db.select().from(services),
@@ -56,6 +59,7 @@ export async function exportBackupAction(): Promise<BackupData> {
     db.select().from(calendarEvents),
     db.select().from(interactionLogs),
     db.select().from(documentEvents),
+    db.select().from(voiceLogs),
   ]);
 
   const metadata: BackupMetadata = {
@@ -71,6 +75,7 @@ export async function exportBackupAction(): Promise<BackupData> {
       calendarEvents: calendarEventsData.length,
       interactionLogs: interactionLogsData.length,
       documentEvents: documentEventsData.length,
+      voiceLogs: voiceLogsData.length,
     },
   };
 
@@ -85,5 +90,6 @@ export async function exportBackupAction(): Promise<BackupData> {
     calendarEvents: calendarEventsData,
     interactionLogs: interactionLogsData,
     documentEvents: documentEventsData,
+    voiceLogs: voiceLogsData,
   };
 }
