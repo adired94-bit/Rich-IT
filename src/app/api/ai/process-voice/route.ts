@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireUser } from "@/lib/supabase/server";
 import { getOpenAiClient } from "@/lib/ai/openai";
 import { getAnthropicClient } from "@/lib/ai/anthropic";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
@@ -32,6 +33,12 @@ async function uploadAudio(file: File, clientId?: string | null): Promise<string
 }
 
 export async function POST(request: Request) {
+  try {
+    await requireUser();
+  } catch {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
   const aiSettings = await getAiSettings();
   if (!aiSettings.openaiApiKey || !aiSettings.anthropicApiKey) {
     return NextResponse.json({ error: "ai_not_configured" }, { status: 501 });

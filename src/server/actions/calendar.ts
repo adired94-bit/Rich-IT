@@ -2,6 +2,7 @@
 
 import { db } from "@/db";
 import { calendarEvents, interactionLogs } from "@/db/schema";
+import { requireUser } from "@/lib/supabase/server";
 import { eventFormSchema, eventStatuses } from "@/lib/validators/calendar";
 import { listEventsInRange } from "@/server/queries/calendar";
 import { eq } from "drizzle-orm";
@@ -9,6 +10,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 export async function fetchEventsAction(startIso: string, endIso: string, clientId?: string) {
+  await requireUser();
   return listEventsInRange(new Date(startIso), new Date(endIso), clientId);
 }
 
@@ -17,6 +19,7 @@ function nullIfEmpty(v?: string | null) {
 }
 
 export async function upsertEventAction(raw: z.infer<typeof eventFormSchema>) {
+  await requireUser();
   const data = eventFormSchema.parse(raw);
   const values = {
     clientId: data.clientId || null,
@@ -56,6 +59,7 @@ export async function upsertEventAction(raw: z.infer<typeof eventFormSchema>) {
 }
 
 export async function deleteEventAction(id: string, clientId?: string | null) {
+  await requireUser();
   await db.delete(calendarEvents).where(eq(calendarEvents.id, id));
   revalidatePath("/calendar");
   if (clientId) revalidatePath(`/clients/${clientId}`);
@@ -63,12 +67,14 @@ export async function deleteEventAction(id: string, clientId?: string | null) {
 }
 
 export async function moveEventAction(id: string, startTime: string, endTime: string) {
+  await requireUser();
   await db.update(calendarEvents).set({ startTime: new Date(startTime), endTime: new Date(endTime) }).where(eq(calendarEvents.id, id));
   revalidatePath("/calendar");
   return { ok: true as const };
 }
 
 export async function updateEventStatusAction(id: string, status: (typeof eventStatuses)[number]) {
+  await requireUser();
   await db.update(calendarEvents).set({ status }).where(eq(calendarEvents.id, id));
   revalidatePath("/calendar");
   return { ok: true as const };

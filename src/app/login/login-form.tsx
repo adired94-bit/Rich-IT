@@ -24,15 +24,20 @@ export function LoginForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      toast.error(t("invalid"));
-      return;
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        toast.error(t("invalid"));
+        return;
+      }
+      const next = params.get("next") ?? "/";
+      const safeNext = next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") && !next.includes("\\") ? next : "/";
+      router.push(safeNext);
+      router.refresh();
+    } finally {
+      setLoading(false);
     }
-    router.push(params.get("next") ?? "/");
-    router.refresh();
   }
 
   async function handleMagicLink() {
@@ -41,17 +46,22 @@ export function LoginForm() {
       return;
     }
     setMagicLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}${params.get("next") ?? "/"}` },
-    });
-    setMagicLoading(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const supabase = createClient();
+      const next = params.get("next") ?? "/";
+      const safeNext = next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") && !next.includes("\\") ? next : "/";
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: `${window.location.origin}${safeNext}` },
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success(t("magicLinkSent"));
+    } finally {
+      setMagicLoading(false);
     }
-    toast.success(t("magicLinkSent"));
   }
 
   return (
