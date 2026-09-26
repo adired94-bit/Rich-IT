@@ -41,7 +41,7 @@ export async function exportBackupAction(): Promise<BackupData> {
   const [
     clientsData,
     servicesData,
-    workOrdersData,
+    workOrdersRaw,
     workOrderItemsData,
     retainersData,
     retainerUsageData,
@@ -61,6 +61,9 @@ export async function exportBackupAction(): Promise<BackupData> {
     db.select().from(documentEvents),
     db.select().from(voiceLogs),
   ]);
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const workOrdersData = workOrdersRaw.map(({ approvalToken, ...wo }) => wo);
 
   const metadata: BackupMetadata = {
     exportedAt: new Date().toISOString(),

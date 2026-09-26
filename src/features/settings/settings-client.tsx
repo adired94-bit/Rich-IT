@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useFormatter } from "next-intl";
 import { toast } from "sonner";
 import { Bell, BellOff, Building2, Cable, Copy, Database, Download, KeyRound, Loader2, Pencil, PenLine, Sparkles, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -65,6 +65,7 @@ export function SettingsClient({
 }) {
   const t = useTranslations("settings");
   const tApp = useTranslations("app");
+  const format = useFormatter();
   const [seeding, setSeeding] = React.useState(false);
   const [pushEnabled, setPushEnabled] = React.useState(false);
   const [pushLoading, setPushLoading] = React.useState(false);
@@ -147,7 +148,7 @@ export function SettingsClient({
       const now = new Date().toISOString();
       localStorage.setItem("lastBackupDate", now);
       setLastBackup(now);
-      toast.success(t("downloadBackup"));
+      toast.success(t("backupDownloaded"));
     } catch {
       toast.error(tApp("error"));
     } finally {
@@ -252,11 +253,15 @@ export function SettingsClient({
           <p className="text-xs text-muted-foreground">{t("backupHint")}</p>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-xs text-muted-foreground">
-              {lastBackup ? t("lastBackup", { date: new Date(lastBackup).toLocaleString() }) : t("neverBacked")}
+              {lastBackup
+                ? t("lastBackup", {
+                    date: format.dateTime(new Date(lastBackup), { dateStyle: "medium", timeStyle: "short" }),
+                  })
+                : t("neverBacked")}
             </div>
             <Button variant="outline" onClick={handleDownloadBackup} disabled={backupLoading} className="shrink-0 gap-1.5">
               {backupLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              {backupLoading ? t("backupDownloading") : t("downloadBackup")}
+              {t("downloadBackup")}
             </Button>
           </div>
         </CardContent>
