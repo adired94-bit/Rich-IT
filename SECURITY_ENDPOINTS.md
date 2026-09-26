@@ -164,13 +164,15 @@ The login form validates the `next` redirect parameter:
 
 ```typescript
 const next = params.get("next") ?? "/";
-const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
+const safeNext = next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") && !next.includes("\\") ? next : "/";
 router.push(safeNext);
 ```
 
 **Rules**:
 - Only relative paths starting with `/` are allowed
 - Paths starting with `//` are rejected (protocol-relative URLs)
+- Paths starting with `/\` are rejected (some browsers treat this like `//`)
+- Any path containing backslashes is rejected (prevents encoding tricks)
 - Invalid paths default to `/`
 - Prevents redirecting to external sites after login
 
@@ -190,6 +192,8 @@ router.push(safeNext);
 
 3. **Verify open redirect protection**:
    - Try login with `?next=//evil.com`
+   - Try login with `?next=/\\evil.com`
+   - Try login with `?next=/path\\evil`
    - Try login with `?next=https://evil.com`
    - Expected: Redirects to `/` instead
 
