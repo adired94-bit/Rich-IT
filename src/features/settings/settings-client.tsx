@@ -2,7 +2,7 @@
 import * as React from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Bell, BellOff, Building2, Cable, Copy, Download, KeyRound, Loader2, Pencil, PenLine, Sparkles, Trash2 } from "lucide-react";
+import { Bell, BellOff, Building2, Cable, Copy, Database, Download, KeyRound, Loader2, Pencil, PenLine, Sparkles, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { seedCatalogAction } from "@/server/actions/catalog";
 import { subscribePushAction, unsubscribePushAction } from "@/server/actions/push";
+import { exportBackupAction } from "@/server/actions/backup";
 import {
   updateCompanySettingsAction,
   verifyPasswordAction,
@@ -69,6 +70,13 @@ export function SettingsClient({
   const [pushLoading, setPushLoading] = React.useState(false);
   const [installPromptAvailable, setInstallPromptAvailable] = React.useState(false);
   const deferredPrompt = React.useRef<{ prompt: () => void } | null>(null);
+  const [backupLoading, setBackupLoading] = React.useState(false);
+  const [lastBackup, setLastBackup] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const stored = localStorage.getItem("lastBackupDate");
+    setLastBackup(stored);
+  }, []);
 
   React.useEffect(() => {
     if (!isPushSupported()) return;
@@ -120,6 +128,31 @@ export function SettingsClient({
   async function copyIcs() {
     await navigator.clipboard.writeText(icsUrl);
     toast.success(tApp("copied"));
+  }
+
+  async function handleDownloadBackup() {
+    setBackupLoading(true);
+    try {
+      const data = await exportBackupAction();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const date = new Date().toISOString().split("T")[0];
+      a.download = `rich-it-backup-${date}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      const now = new Date().toISOString();
+      localStorage.setItem("lastBackupDate", now);
+      setLastBackup(now);
+      toast.success(t("downloadBackup"));
+    } catch {
+      toast.error(tApp("error"));
+    } finally {
+      setBackupLoading(false);
+    }
   }
 
   const statusRows: { label: string; ok: boolean }[] = [
@@ -208,6 +241,24 @@ export function SettingsClient({
             {seeding && <Loader2 className="h-4 w-4 animate-spin" />}
             {t("seedCatalog")}
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-3 pt-5">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            <Database className="h-4 w-4 text-primary" /> {t("backup")}
+          </p>
+          <p className="text-xs text-muted-foreground">{t("backupHint")}</p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs text-muted-foreground">
+              {lastBackup ? t("lastBackup", { date: new Date(lastBackup).toLocaleString() }) : t("neverBacked")}
+            </div>
+            <Button variant="outline" onClick={handleDownloadBackup} disabled={backupLoading} className="shrink-0 gap-1.5">
+              {backupLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              {backupLoading ? t("backupDownloading") : t("downloadBackup")}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
