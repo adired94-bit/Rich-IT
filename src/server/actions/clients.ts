@@ -1,11 +1,11 @@
 "use server";
 
 import { db } from "@/db";
-import { clients, clientVault, retainers, retainerUsage, interactionLogs } from "@/db/schema";
+import { clients, clientVault, retainers, retainerUsage, interactionLogs, workOrders } from "@/db/schema";
 import { listRetainers, listClientsBasic } from "@/server/queries/clients";
 import { clientFormSchema, vaultFormSchema, retainerFormSchema, retainerUsageSchema, interactionFormSchema, type VaultPayload } from "@/lib/validators/clients";
 import { encryptJson, decryptJson } from "@/lib/crypto";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -48,9 +48,39 @@ export async function upsertClientAction(raw: z.infer<typeof clientFormSchema>) 
   return { ok: true as const, id: id! };
 }
 
+/**
+ * work_orders.client_id is ON DELETE RESTRICT on purpose: documents that were
+ * sent to or signed by a client are business/tax records and must survive the
+ * client's deletion. Drafts and cancelled documents are not, so they are
+ * removed together with the client; anything else blocks the delete and the
+ * UI offers archiving (status "inactive") instead.
+ */
 export async function deleteClientAction(id: string) {
-  await db.delete(clients).where(eq(clients.id, id));
+  const docs = await db.query.workOrders.findMany({
+    where: eq(workOrders.clientId, id),
+    columns: { id: true, status: true },
+  });
+  const kept = docs.filter((d) => d.status !== "draft" && d.status !== "cancelled");
+  if (kept.length > 0) {
+    return { ok: false as const, error: "has_documents" as const, count: kept.length };
+  }
+
+  await db.transaction(async (tx) => {
+    if (docs.length > 0) {
+      await tx.delete(workOrders).where(and(eq(workOrders.clientId, id), inArray(workOrders.status, ["draft", "cancelled"])));
+    }
+    await tx.delete(clients).where(eq(clients.id, id));
+  });
   revalidatePath("/clients");
+  revalidatePath("/work-orders");
+  revalidatePath("/");
+  return { ok: true as const };
+}
+
+export async function archiveClientAction(id: string) {
+  await db.update(clients).set({ status: "inactive" }).where(eq(clients.id, id));
+  revalidatePath("/clients");
+  revalidatePath(`/clients/${id}`);
   return { ok: true as const };
 }
 

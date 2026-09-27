@@ -31,17 +31,18 @@ export default async function DashboardPage() {
     getMonthlyRevenueTrend(6),
   ]);
 
-  const metrics = [
-    { label: t("billedThisMonth"), value: formatMoney(stats.billedThisMonth, lang), icon: Wallet, accent: "text-primary" },
+  const metrics: { label: string; value: string; sub?: string; icon: typeof Wallet; accent: string; href: string }[] = [
+    { label: t("billedThisMonth"), value: formatMoney(stats.billedThisMonth, lang), icon: Wallet, accent: "text-primary", href: "/work-orders?view=signed-month" },
     {
       label: t("pendingApprovals"),
       value: String(stats.pendingCount),
       sub: t("pendingValue", { value: formatMoney(stats.pendingValue, lang) }),
       icon: FileClock,
       accent: "text-warning",
+      href: "/work-orders?view=pending",
     },
-    { label: t("activeRetainers"), value: String(retainers.length), icon: Timer, accent: "text-voice" },
-    { label: t("signedThisMonth"), value: String(stats.signedThisMonth), icon: FileCheck2, accent: "text-success" },
+    { label: t("activeRetainers"), value: String(retainers.length), icon: Timer, accent: "text-voice", href: "/retainers" },
+    { label: t("signedThisMonth"), value: String(stats.signedThisMonth), icon: FileCheck2, accent: "text-success", href: "/work-orders?view=signed-month" },
   ];
 
   return (
@@ -52,14 +53,16 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {metrics.map((m) => (
-          <Card key={m.label} className="p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">{m.label}</span>
-              <m.icon className={`h-4 w-4 ${m.accent}`} />
-            </div>
-            <p className="mt-2 text-2xl font-bold text-foreground text-telemetry">{m.value}</p>
-            {m.sub && <p className="mt-0.5 text-[11px] text-muted-foreground">{m.sub}</p>}
-          </Card>
+          <Link key={m.label} href={m.href} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <Card className="glow-hover h-full cursor-pointer p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">{m.label}</span>
+                <m.icon className={`h-4 w-4 ${m.accent}`} />
+              </div>
+              <p className="mt-2 text-2xl font-bold text-foreground text-telemetry">{m.value}</p>
+              {m.sub && <p className="mt-0.5 text-[11px] text-muted-foreground">{m.sub}</p>}
+            </Card>
+          </Link>
         ))}
       </div>
 

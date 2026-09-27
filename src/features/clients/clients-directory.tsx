@@ -24,7 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ClientFormDialog } from "./client-form-dialog";
-import { deleteClientAction } from "@/server/actions/clients";
+import { deleteClientAction, archiveClientAction } from "@/server/actions/clients";
 import { formatMoney, initials } from "@/lib/utils";
 import { clientStatuses } from "@/lib/validators/clients";
 import type { Client } from "@/db/schema";
@@ -47,6 +47,7 @@ export function ClientsDirectory({ rows }: { rows: Row[] }) {
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Client | null>(null);
   const [deleting, setDeleting] = React.useState<Client | null>(null);
+  const [blocked, setBlocked] = React.useState<{ client: Client; count: number } | null>(null);
 
   const filtered = React.useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -64,14 +65,32 @@ export function ClientsDirectory({ rows }: { rows: Row[] }) {
 
   async function handleDelete() {
     if (!deleting) return;
+    const target = deleting;
     try {
-      await deleteClientAction(deleting.id);
-      toast.success(tApp("deleted"));
-      router.refresh();
+      const res = await deleteClientAction(target.id);
+      if (res.ok) {
+        toast.success(tApp("deleted"));
+        router.refresh();
+      } else {
+        setBlocked({ client: target, count: res.count });
+      }
     } catch {
       toast.error(tApp("error"));
     } finally {
       setDeleting(null);
+    }
+  }
+
+  async function handleArchive() {
+    if (!blocked) return;
+    try {
+      await archiveClientAction(blocked.client.id);
+      toast.success(t("archived"));
+      router.refresh();
+    } catch {
+      toast.error(tApp("error"));
+    } finally {
+      setBlocked(null);
     }
   }
 
@@ -177,6 +196,19 @@ export function ClientsDirectory({ rows }: { rows: Row[] }) {
           <AlertDialogFooter>
             <AlertDialogCancel>{tApp("cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>{tApp("delete")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={Boolean(blocked)} onOpenChange={(v) => !v && setBlocked(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("deleteBlockedTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("deleteBlocked", { count: blocked?.count ?? 0 })}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tApp("cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleArchive}>{t("archive")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

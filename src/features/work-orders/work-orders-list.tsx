@@ -3,7 +3,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
-import { Search, Plus, FileText, DollarSign, CheckCircle2, CircleAlert } from "lucide-react";
+import { Search, Plus, FileText, DollarSign, CheckCircle2, CircleAlert, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,22 +18,43 @@ import type { Locale } from "@/i18n/config";
 
 type Row = Awaited<ReturnType<typeof listWorkOrders>>[number];
 
-export function WorkOrdersList({ rows }: { rows: Row[] }) {
+/** Drill-down views opened from the dashboard cards; mirror getDashboardStats(). */
+export type WorkOrdersView = "pending" | "signed-month";
+
+function startOfMonth() {
+  const d = new Date();
+  d.setDate(1);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function matchesView(r: Row, view: WorkOrdersView | null) {
+  if (view === "pending") return r.status === "sent" || r.status === "viewed";
+  if (view === "signed-month") return r.status === "signed" && !!r.signedAt && new Date(r.signedAt) >= startOfMonth();
+  return true;
+}
+
+export function WorkOrdersList({ rows, initialView = null }: { rows: Row[]; initialView?: WorkOrdersView | null }) {
   const t = useTranslations("workOrders");
   const tApp = useTranslations("app");
+  const tDash = useTranslations("dashboard");
   const locale = useLocale() as Locale;
   const pathname = usePathname();
   const [search, setSearch] = React.useState("");
   const [status, setStatus] = React.useState("all");
+  const [view, setView] = React.useState<WorkOrdersView | null>(initialView);
 
   const filtered = React.useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
+      if (!matchesView(r, view)) return false;
       if (status !== "all" && r.status !== status) return false;
       if (!q) return true;
       return r.number.toLowerCase().includes(q) || r.title.toLowerCase().includes(q) || r.client.name.toLowerCase().includes(q);
     });
-  }, [rows, search, status]);
+  }, [rows, search, status, view]);
+
+  const viewTotal = React.useMemo(() => filtered.reduce((sum, r) => sum + r.totalAmount, 0), [filtered]);
 
   const isPaidFolder = pathname?.includes("/paid");
 
@@ -69,7 +90,18 @@ export function WorkOrdersList({ rows }: { rows: Row[] }) {
         </Button>
       </div>
 
-      <p className="text-xs text-muted-foreground">{t("count", { count: filtered.length })}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        {view && (
+          <Badge variant="primary" className="gap-1.5 py-1">
+            {view === "pending" ? tDash("pendingApprovals") : tDash("signedThisMonth")}
+            <span className="text-telemetry">· {formatMoney(viewTotal, locale)}</span>
+            <button type="button" onClick={() => setView(null)} aria-label={tApp("close")} className="rounded-full hover:opacity-70">
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+        )}
+        <p className="text-xs text-muted-foreground">{t("count", { count: filtered.length })}</p>
+      </div>
 
       {filtered.length === 0 ? (
         <EmptyState icon={FileText} title={tApp("empty")} />
