@@ -67,7 +67,7 @@ export function LoginForm() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="email">{t("email")}</Label>
-              <Input id="email" type="email" required dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="engineer@rich-it.co.il" />
+              <Input id="email" type="email" required dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("emailPlaceholder")} />
             </div>
             <div>
               <Label htmlFor="password">{t("password")}</Label>

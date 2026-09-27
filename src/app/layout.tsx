@@ -15,9 +15,11 @@ const rubik = Rubik({
   display: "swap",
 });
 
+const siteDescription = "מערכת ניהול לקוחות ושירות לשטח — Rich IT Solutions";
+
 export const metadata: Metadata = {
   title: "Rich IT Solutions — CRM",
-  description: "AI-Powered All-in-One CRM & Service Management for Rich IT Solutions",
+  description: siteDescription,
   manifest: "/manifest.webmanifest",
   applicationName: "Rich IT Solutions",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Rich IT" },
@@ -25,13 +27,25 @@ export const metadata: Metadata = {
     icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/icons/icon-192.png" }],
   },
+  openGraph: {
+    title: "Rich IT Solutions — CRM",
+    description: siteDescription,
+    locale: "he_IL",
+    type: "website",
+    siteName: "Rich IT Solutions",
+    images: [{ url: "/icons/icon-512.png" }],
+  },
+  twitter: {
+    card: "summary",
+    title: "Rich IT Solutions — CRM",
+    description: siteDescription,
+  },
 };
 
 export const viewport: Viewport = {
   themeColor: "#0b0f17",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: "cover",
 };
 

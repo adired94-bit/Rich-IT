@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { toast } from "sonner";
-import { ArrowRight, Send, Ban, Download, MessageCircle, Link2, FileCheck2, FileClock, FilePlus, FileX, Eye } from "lucide-react";
+import { ArrowRight, Send, Ban, Download, MessageCircle, Link2, FileCheck2, FileClock, FilePlus, FileX, Eye, CheckCircle2, Circle, DollarSign, CircleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { WorkOrderEditor } from "./work-order-editor";
-import { cancelWorkOrderAction, markWorkOrderSentAction } from "@/server/actions/work-orders";
+import { cancelWorkOrderAction, markWorkOrderSentAction, toggleWorkOrderCompletedAction, toggleWorkOrderPaidAction } from "@/server/actions/work-orders";
 import { formatDateTime, formatMoney, toWhatsAppNumber } from "@/lib/utils";
 import type { CompanySettings } from "@/server/queries/settings";
 import type { getWorkOrder, listDocumentEvents } from "@/server/queries/work-orders";
@@ -111,6 +111,26 @@ export function WorkOrderDetail({
     toast.success(tApp("copied"));
   }
 
+  async function handleToggleCompleted() {
+    try {
+      await toggleWorkOrderCompletedAction(workOrder.id, !workOrder.isCompleted);
+      toast.success(tApp("saved"));
+      router.refresh();
+    } catch {
+      toast.error(tApp("error"));
+    }
+  }
+
+  async function handleTogglePaid() {
+    try {
+      await toggleWorkOrderPaidAction(workOrder.id, !workOrder.isPaid);
+      toast.success(tApp("saved"));
+      router.refresh();
+    } catch {
+      toast.error(tApp("error"));
+    }
+  }
+
   return (
     <div className="space-y-5">
       <Link href="/work-orders" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
@@ -160,6 +180,44 @@ export function WorkOrderDetail({
           )}
         </div>
       </div>
+
+      {workOrder.status === "signed" && (
+        <Card>
+          <CardContent className="pt-5">
+            <p className="mb-3 text-sm font-semibold text-foreground">{t("opsStatus")}</p>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant={workOrder.isCompleted ? "success" : "outline"}
+                size="sm"
+                className="gap-1.5"
+                onClick={handleToggleCompleted}
+              >
+                {workOrder.isCompleted ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                {workOrder.isCompleted ? t("completed") : t("notCompleted")}
+              </Button>
+              <Button
+                variant={workOrder.isPaid ? "success" : "outline"}
+                size="sm"
+                className="gap-1.5"
+                onClick={handleTogglePaid}
+              >
+                {workOrder.isPaid ? <DollarSign className="h-4 w-4" /> : <CircleAlert className="h-4 w-4" />}
+                {workOrder.isPaid ? t("paid") : t("notPaid")}
+              </Button>
+            </div>
+            {workOrder.completedAt && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {t("completedAt", { date: formatDateTime(workOrder.completedAt, locale) })}
+              </p>
+            )}
+            {workOrder.paidAt && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {t("paidAt", { date: formatDateTime(workOrder.paidAt, locale) })}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <WorkOrderEditor workOrder={workOrder} company={company} onSaved={() => router.refresh()} />
 

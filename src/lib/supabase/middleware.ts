@@ -8,11 +8,14 @@ const PUBLIC_PREFIXES = [
   "/api/approve",
   "/api/calendar/ics",
   "/api/health",
+  "/api/cron",
   "/manifest.webmanifest",
   "/sw.js",
   "/icons",
   "/fonts",
   "/offline",
+  "/robots.txt",
+  "/sitemap.xml",
 ];
 
 export async function updateSession(request: NextRequest) {

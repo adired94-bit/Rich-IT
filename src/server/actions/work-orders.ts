@@ -125,3 +125,23 @@ export async function markWorkOrderSentAction(id: string) {
   revalidatePath("/");
   return { ok: true as const };
 }
+
+export async function toggleWorkOrderCompletedAction(id: string, isCompleted: boolean) {
+  await db
+    .update(workOrders)
+    .set({ isCompleted, completedAt: isCompleted ? new Date() : null })
+    .where(eq(workOrders.id, id));
+  revalidatePath("/work-orders");
+  revalidatePath(`/work-orders/${id}`);
+  return { ok: true as const };
+}
+
+export async function toggleWorkOrderPaidAction(id: string, isPaid: boolean) {
+  await db
+    .update(workOrders)
+    .set({ isPaid, paidAt: isPaid ? new Date() : null })
+    .where(eq(workOrders.id, id));
+  revalidatePath("/work-orders");
+  revalidatePath(`/work-orders/${id}`);
+  return { ok: true as const };
+}
