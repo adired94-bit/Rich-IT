@@ -14,7 +14,10 @@ export function Header({ email }: { email?: string | null }) {
   const openQuickRecord = useUiStore((s) => s.openQuickRecord);
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl sm:px-6">
+    <header
+      className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl sm:px-6"
+      style={{ paddingTop: "env(safe-area-inset-top)", height: "calc(4rem + env(safe-area-inset-top))" }}
+    >
       <MobileNav />
       <div className="flex-1" />
       <OnlineIndicator />

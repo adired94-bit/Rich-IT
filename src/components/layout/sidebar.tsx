@@ -12,7 +12,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2.5 px-5 py-5">
+      <div className="flex items-center gap-2.5 px-5 py-5" style={{ paddingTop: "calc(1.25rem + env(safe-area-inset-top))" }}>
         <Image src="/icons/icon-96.png" alt="" width={32} height={32} className="rounded-lg" />
         <div className="leading-tight">
           <p className="text-sm font-bold text-foreground">Rich IT Solutions</p>
