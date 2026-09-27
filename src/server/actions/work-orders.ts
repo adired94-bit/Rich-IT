@@ -55,7 +55,15 @@ export async function upsertWorkOrderAction(raw: WorkOrderFormValues) {
       const number = await nextWorkOrderNumber();
       const [row] = await tx
         .insert(workOrders)
-        .values({ ...values, number, status: "draft" })
+        .values({
+          ...values,
+          number,
+          status: "draft",
+          isCompleted: data.markCompleted ?? false,
+          completedAt: data.markCompleted ? new Date() : null,
+          isPaid: data.markPaid ?? false,
+          paidAt: data.markPaid ? new Date() : null,
+        })
         .returning({ id: workOrders.id });
       workOrderId = row.id;
     }

@@ -418,7 +418,15 @@
     "detectedLanguage": "שפה שזוהתה",
     "duration": "משך",
     "failed": "העיבוד נכשל",
-    "aiNotConfigured": "מפתחות ה-AI (OPENAI_API_KEY / ANTHROPIC_API_KEY) אינם מוגדרים."
+    "aiNotConfigured": "מפתחות ה-AI (OPENAI_API_KEY / ANTHROPIC_API_KEY) אינם מוגדרים.",
+    "emptyTranscript": "לא נשמע דיבור בהקלטה — נסו שוב קרוב יותר למיקרופון.",
+    "timeout": "השרת לא הגיב בזמן (קוד {status}). נסו הקלטה קצרה יותר.",
+    "stage": {
+      "prepare": "שלב הכנה",
+      "transcribe": "שלב תמלול (OpenAI)",
+      "analyze": "שלב ניתוח (Claude)",
+      "save": "שלב שמירה"
+    }
   },
   "approve": {
     "title": "אישור דף שירות",

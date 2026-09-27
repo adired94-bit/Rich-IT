@@ -35,6 +35,8 @@ export const workOrderFormSchema = z.object({
   retainerHours: z.coerce.number().min(0).optional().nullable(),
   transcript: z.string().optional(),
   aiResult: z.record(z.string(), z.unknown()).optional(),
+  markCompleted: z.boolean().optional(),
+  markPaid: z.boolean().optional(),
 });
 export type WorkOrderFormValues = z.infer<typeof workOrderFormSchema>;
 
@@ -79,5 +81,7 @@ export const aiExtractionSchema = z.object({
   timeSpentMinutes: z.number().describe("Total time spent in minutes, 0 if not mentioned"),
   nextSteps: z.string().nullable().describe("Follow-up tasks or future work mentioned, in Hebrew"),
   confidence: z.number().min(0).max(1).describe("Overall confidence in the extraction, 0 to 1"),
+  workCompleted: z.boolean().describe("True if the engineer says the work is already done (past tense), false if it is planned/in progress"),
+  alreadyPaid: z.boolean().describe("True only if the engineer explicitly says the client already paid / payment was collected"),
 });
 export type AiExtraction = z.infer<typeof aiExtractionSchema>;

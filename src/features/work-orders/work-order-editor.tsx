@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ItemEditor } from "./item-editor";
 import { CatalogPickerDialog } from "./catalog-picker-dialog";
@@ -135,6 +136,8 @@ export function WorkOrderEditor({
   const [form, setForm] = React.useState<FormState>(() =>
     workOrder ? fromExisting(workOrder, company) : aiData ? fromAi(aiData, company) : blankForm(company, defaultClientId),
   );
+  const [markCompleted, setMarkCompleted] = React.useState(() => Boolean(aiData?.extraction.workCompleted || aiData?.extraction.alreadyPaid));
+  const [markPaid, setMarkPaid] = React.useState(() => Boolean(aiData?.extraction.alreadyPaid));
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
 
@@ -183,6 +186,7 @@ export function WorkOrderEditor({
         retainerHours: form.retainerHours || null,
         transcript: aiData?.transcript,
         aiResult: aiData?.extraction as unknown as Record<string, unknown>,
+        ...(workOrder ? {} : { markCompleted, markPaid }),
       });
       toast.success(tApp("saved"));
       onSaved(res.id);
@@ -213,6 +217,22 @@ export function WorkOrderEditor({
                 {aiData.clientName && <span> — &quot;{aiData.clientName}&quot;</span>}
               </p>
             )}
+            <div className="flex flex-wrap gap-4 pt-1">
+              <label className="flex items-center gap-2 text-xs text-foreground">
+                <Checkbox checked={markCompleted} onCheckedChange={(v) => setMarkCompleted(v === true)} />
+                {t("markCompleted")}
+              </label>
+              <label className="flex items-center gap-2 text-xs text-foreground">
+                <Checkbox
+                  checked={markPaid}
+                  onCheckedChange={(v) => {
+                    setMarkPaid(v === true);
+                    if (v === true) setMarkCompleted(true);
+                  }}
+                />
+                {t("markPaid")}
+              </label>
+            </div>
             <details className="text-xs text-muted-foreground">
               <summary className="cursor-pointer select-none">{t("transcript")}</summary>
               <p className="mt-1 whitespace-pre-wrap rounded-md bg-background/40 p-2">{aiData.transcript}</p>

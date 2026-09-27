@@ -418,7 +418,15 @@
     "detectedLanguage": "Распознанный язык",
     "duration": "Длительность",
     "failed": "Обработка не удалась",
-    "aiNotConfigured": "Ключи AI (OPENAI_API_KEY / ANTHROPIC_API_KEY) не настроены."
+    "aiNotConfigured": "Ключи AI (OPENAI_API_KEY / ANTHROPIC_API_KEY) не настроены.",
+    "emptyTranscript": "В записи не слышно речи — попробуйте ближе к микрофону.",
+    "timeout": "Сервер не ответил вовремя (код {status}). Попробуйте запись короче.",
+    "stage": {
+      "prepare": "подготовка",
+      "transcribe": "расшифровка (OpenAI)",
+      "analyze": "анализ (Claude)",
+      "save": "сохранение"
+    }
   },
   "approve": {
     "title": "Подтверждение акта работ",

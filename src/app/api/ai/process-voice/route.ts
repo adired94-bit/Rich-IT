@@ -54,6 +54,8 @@ export async function POST(request: Request) {
   }
 
   let voiceLogId: string | null = null;
+  // Which step failed, so the error on screen says where to look.
+  let stage: "prepare" | "transcribe" | "analyze" | "save" = "prepare";
 
   try {
     const [audioUrl, lockedClient, catalogRows, clientRows] = await Promise.all([
@@ -70,6 +72,7 @@ export async function POST(request: Request) {
     voiceLogId = logId;
 
     // 1. Transcribe (Whisper auto-detects Hebrew / Russian / mixed speech).
+    stage = "transcribe";
     const openai = getOpenAiClient(aiSettings.openaiApiKey);
     let transcript = "";
     let whisperLanguage: string | null = null;
@@ -92,14 +95,16 @@ export async function POST(request: Request) {
     }
 
     // 2. Structured extraction against the service catalog + client list.
+    stage = "analyze";
     const anthropic = getAnthropicClient(aiSettings.anthropicApiKey);
     const catalog = catalogRows.map(toCatalogPromptItem);
     const clients = clientId && lockedClient ? [{ id: lockedClient.id, name: lockedClient.name }] : clientRows;
 
     const response = await anthropic.messages.parse({
       model: aiSettings.claudeModel,
-      max_tokens: 8000,
-      output_config: { effort: "high", format: zodOutputFormat(aiExtractionSchema) },
+      max_tokens: 4096,
+      // Structured extraction doesn't need deep reasoning; lower effort keeps us well inside the function time limit.
+      output_config: { effort: "low", format: zodOutputFormat(aiExtractionSchema) },
       system: buildVoiceExtractionSystemPrompt(),
       messages: [
         {
@@ -119,6 +124,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "ai_parse_failed", transcript }, { status: 502 });
     }
 
+    stage = "save";
     const extraction = response.parsed_output;
     // Only trust a model-suggested client ID if it's one we actually offered;
     // a made-up/malformed ID would fail the voice_logs FK/uuid update below.
@@ -152,7 +158,8 @@ export async function POST(request: Request) {
       extraction: { ...extraction, clientMatchId: matchedClientId, items: enrichedItems },
     });
   } catch (err) {
-    console.error("[process-voice] failed:", err);
+    console.error(`[process-voice] failed at ${stage}:`, err);
+    const detail = ((err as Error).message ?? String(err)).slice(0, 300);
     if (voiceLogId) {
       await db
         .update(voiceLogs)
@@ -160,6 +167,6 @@ export async function POST(request: Request) {
         .where(eq(voiceLogs.id, voiceLogId))
         .catch(() => {});
     }
-    return NextResponse.json({ error: "processing_failed" }, { status: 500 });
+    return NextResponse.json({ error: "processing_failed", stage, detail }, { status: 500 });
   }
 }

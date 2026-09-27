@@ -36,11 +36,14 @@ export function AudioRecorderPanel({
       if (clientId) form.append("clientId", clientId);
 
       const res = await fetch("/api/ai/process-voice", { method: "POST", body: form });
-      const data = await res.json();
+      // A platform timeout returns an HTML error page, not JSON.
+      const data = await res.json().catch(() => null);
 
-      if (!res.ok) {
-        if (data.error === "ai_not_configured") toast.error(t("aiNotConfigured"));
-        else toast.error(t("failed"));
+      if (!res.ok || !data) {
+        if (data?.error === "ai_not_configured") toast.error(t("aiNotConfigured"));
+        else if (data?.error === "empty_transcript") toast.error(t("emptyTranscript"));
+        else if (!data) toast.error(t("failed"), { description: t("timeout", { status: res.status }), duration: 15000 });
+        else toast.error(t("failed"), { description: [data.stage && t(`stage.${data.stage}`), data.detail].filter(Boolean).join(" — "), duration: 15000 });
         return;
       }
       onExtracted(data as VoiceProcessResponse);
