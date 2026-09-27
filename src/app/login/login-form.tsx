@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { safeNextPath } from "@/lib/safe-redirect";
 
 const configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) && Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
@@ -31,7 +32,7 @@ export function LoginForm() {
       toast.error(t("invalid"));
       return;
     }
-    router.push(params.get("next") ?? "/");
+    router.push(safeNextPath(params.get("next")));
     router.refresh();
   }
 
@@ -44,7 +45,9 @@ export function LoginForm() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}${params.get("next") ?? "/"}` },
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNextPath(params.get("next")))}`,
+      },
     });
     setMagicLoading(false);
     if (error) {

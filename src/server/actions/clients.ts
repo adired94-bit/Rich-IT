@@ -1,5 +1,6 @@
 "use server";
 
+import { requireUser } from "@/lib/supabase/server";
 import { db } from "@/db";
 import { clients, clientVault, retainers, retainerUsage, interactionLogs, workOrders } from "@/db/schema";
 import { listRetainers, listClientsBasic } from "@/server/queries/clients";
@@ -16,6 +17,7 @@ function nullIfEmpty(v?: string | null) {
 /* ------------------------------ Clients ------------------------------ */
 
 export async function upsertClientAction(raw: z.infer<typeof clientFormSchema>) {
+  await requireUser();
   const data = clientFormSchema.parse(raw);
   const values = {
     name: data.name,
@@ -56,6 +58,7 @@ export async function upsertClientAction(raw: z.infer<typeof clientFormSchema>) 
  * UI offers archiving (status "inactive") instead.
  */
 export async function deleteClientAction(id: string) {
+  await requireUser();
   const docs = await db.query.workOrders.findMany({
     where: eq(workOrders.clientId, id),
     columns: { id: true, status: true },
@@ -78,6 +81,7 @@ export async function deleteClientAction(id: string) {
 }
 
 export async function archiveClientAction(id: string) {
+  await requireUser();
   await db.update(clients).set({ status: "inactive" }).where(eq(clients.id, id));
   revalidatePath("/clients");
   revalidatePath(`/clients/${id}`);
@@ -87,6 +91,7 @@ export async function archiveClientAction(id: string) {
 /* ------------------------------- Vault -------------------------------- */
 
 export async function upsertVaultEntryAction(raw: z.infer<typeof vaultFormSchema>) {
+  await requireUser();
   const data = vaultFormSchema.parse(raw);
   const payload: VaultPayload = {
     host: nullIfEmpty(data.host) ?? undefined,
@@ -107,6 +112,7 @@ export async function upsertVaultEntryAction(raw: z.infer<typeof vaultFormSchema
 }
 
 export async function deleteVaultEntryAction(id: string, clientId: string) {
+  await requireUser();
   await db.delete(clientVault).where(eq(clientVault.id, id));
   revalidatePath(`/clients/${clientId}`);
   return { ok: true as const };
@@ -114,6 +120,7 @@ export async function deleteVaultEntryAction(id: string, clientId: string) {
 
 /** Decrypts a single vault entry on demand. Never called eagerly for lists. */
 export async function revealVaultEntryAction(id: string): Promise<VaultPayload> {
+  await requireUser();
   const entry = await db.query.clientVault.findFirst({ where: eq(clientVault.id, id) });
   if (!entry) throw new Error("Vault entry not found");
   return decryptJson<VaultPayload>(entry.encryptedData);
@@ -122,6 +129,7 @@ export async function revealVaultEntryAction(id: string): Promise<VaultPayload> 
 /* ------------------------------ Retainers ------------------------------ */
 
 export async function upsertRetainerAction(raw: z.infer<typeof retainerFormSchema>) {
+  await requireUser();
   const data = retainerFormSchema.parse(raw);
   const values = {
     clientId: data.clientId,
@@ -129,8 +137,10 @@ export async function upsertRetainerAction(raw: z.infer<typeof retainerFormSchem
     totalHours: data.totalHours,
     monthlyFee: data.monthlyFee,
     overageRate: data.overageRate ?? null,
+    // Date-only inputs parse as UTC midnight; make the period end inclusive of
+    // its whole last day so a retainer doesn't drop off on its final morning.
     periodStart: new Date(data.periodStart),
-    periodEnd: new Date(data.periodEnd),
+    periodEnd: /^\d{4}-\d{2}-\d{2}$/.test(data.periodEnd) ? new Date(`${data.periodEnd}T23:59:59+03:00`) : new Date(data.periodEnd),
     active: data.active,
   };
   if (data.id) {
@@ -143,12 +153,14 @@ export async function upsertRetainerAction(raw: z.infer<typeof retainerFormSchem
 }
 
 export async function deleteRetainerAction(id: string, clientId: string) {
+  await requireUser();
   await db.delete(retainers).where(eq(retainers.id, id));
   revalidatePath(`/clients/${clientId}`);
   return { ok: true as const };
 }
 
 export async function logRetainerUsageAction(raw: z.infer<typeof retainerUsageSchema>, clientId: string) {
+  await requireUser();
   const data = retainerUsageSchema.parse(raw);
   await db.insert(retainerUsage).values({ retainerId: data.retainerId, hours: data.hours, note: nullIfEmpty(data.note) });
   revalidatePath(`/clients/${clientId}`);
@@ -158,6 +170,7 @@ export async function logRetainerUsageAction(raw: z.infer<typeof retainerUsageSc
 /* ----------------------------- Interactions ----------------------------- */
 
 export async function addInteractionAction(raw: z.infer<typeof interactionFormSchema>) {
+  await requireUser();
   const data = interactionFormSchema.parse(raw);
   await db.insert(interactionLogs).values({
     clientId: data.clientId,
@@ -171,6 +184,7 @@ export async function addInteractionAction(raw: z.infer<typeof interactionFormSc
 }
 
 export async function deleteInteractionAction(id: string, clientId: string) {
+  await requireUser();
   await db.delete(interactionLogs).where(eq(interactionLogs.id, id));
   revalidatePath(`/clients/${clientId}`);
   return { ok: true as const };
@@ -180,10 +194,12 @@ export async function deleteInteractionAction(id: string, clientId: string) {
 
 /** Active retainers for a client, used by the work-order editor's hour-bank picker. */
 export async function fetchActiveRetainersAction(clientId: string) {
+  await requireUser();
   const rows = await listRetainers(clientId);
   return rows.filter((r) => r.active);
 }
 
 export async function fetchClientsBasicAction() {
+  await requireUser();
   return listClientsBasic();
 }

@@ -92,8 +92,7 @@ export function WorkOrderDetail({
     }
   }
 
-  async function handleSendWhatsApp() {
-    if (workOrder.status === "draft") await handleMarkSent();
+  function handleSendWhatsApp() {
     const message = t("whatsappMessage", {
       contact: workOrder.client.contactPerson || workOrder.client.name,
       number: workOrder.number,
@@ -103,7 +102,10 @@ export function WorkOrderDetail({
       engineer: workOrder.performerName || company.engineerName || company.name,
     });
     const url = whatsappNumber ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}` : `https://wa.me/?text=${encodeURIComponent(message)}`;
+    // Open synchronously inside the click: mobile browsers block window.open
+    // once an await has run, so the status update happens afterwards.
     window.open(url, "_blank", "noopener,noreferrer");
+    if (workOrder.status === "draft") void handleMarkSent();
   }
 
   async function handleCopyLink() {
@@ -219,7 +221,18 @@ export function WorkOrderDetail({
         </Card>
       )}
 
-      <WorkOrderEditor workOrder={workOrder} company={company} onSaved={() => router.refresh()} />
+      {workOrder.status === "signed" || workOrder.status === "cancelled" ? (
+        <div className="space-y-2">
+          <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            {workOrder.status === "signed" ? t("lockedSigned") : t("lockedCancelled")}
+          </p>
+          <fieldset disabled className="contents">
+            <WorkOrderEditor workOrder={workOrder} company={company} onSaved={() => router.refresh()} />
+          </fieldset>
+        </div>
+      ) : (
+        <WorkOrderEditor workOrder={workOrder} company={company} onSaved={() => router.refresh()} />
+      )}
 
       {events.length > 0 && (
         <Card>

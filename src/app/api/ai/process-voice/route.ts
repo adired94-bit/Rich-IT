@@ -32,7 +32,13 @@ async function uploadAudio(file: File, clientId?: string | null): Promise<string
 }
 
 export async function POST(request: Request) {
-  const aiSettings = await getAiSettings();
+  let aiSettings: Awaited<ReturnType<typeof getAiSettings>>;
+  try {
+    aiSettings = await getAiSettings();
+  } catch (err) {
+    console.error("[process-voice] could not load AI settings:", err);
+    return NextResponse.json({ error: "processing_failed" }, { status: 500 });
+  }
   if (!aiSettings.openaiApiKey || !aiSettings.anthropicApiKey) {
     return NextResponse.json({ error: "ai_not_configured" }, { status: 501 });
   }
@@ -114,7 +120,11 @@ export async function POST(request: Request) {
     }
 
     const extraction = response.parsed_output;
-    const finalClientId = clientId ?? extraction.clientMatchId ?? null;
+    // Only trust a model-suggested client ID if it's one we actually offered;
+    // a made-up/malformed ID would fail the voice_logs FK/uuid update below.
+    const knownClientIds = new Set(clients.map((c) => c.id));
+    const matchedClientId = extraction.clientMatchId && knownClientIds.has(extraction.clientMatchId) ? extraction.clientMatchId : null;
+    const finalClientId = clientId ?? matchedClientId;
 
     const catalogById = new Map(catalogRows.map((s) => [s.id, s]));
     const enrichedItems = extraction.items.map((item) => {
@@ -139,7 +149,7 @@ export async function POST(request: Request) {
       detectedLanguage: extraction.detectedLanguage,
       clientId: finalClientId,
       clientName: lockedClient?.name ?? extraction.clientNameMentioned ?? null,
-      extraction: { ...extraction, items: enrichedItems },
+      extraction: { ...extraction, clientMatchId: matchedClientId, items: enrichedItems },
     });
   } catch (err) {
     console.error("[process-voice] failed:", err);

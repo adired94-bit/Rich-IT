@@ -22,6 +22,7 @@ export async function updateCompanySettingsAction(raw: z.infer<typeof companySet
 }
 
 export async function verifyPasswordAction(password: string): Promise<{ ok: boolean }> {
+  await requireUser();
   try {
     await assertPassword(password);
     return { ok: true };
@@ -31,6 +32,7 @@ export async function verifyPasswordAction(password: string): Promise<{ ok: bool
 }
 
 export async function updateAiKeysAction(password: string, raw: z.infer<typeof aiKeysSchema>) {
+  await requireUser();
   await assertPassword(password);
   const data = aiKeysSchema.parse(raw);
   await updateAiKeys(data);
@@ -38,6 +40,7 @@ export async function updateAiKeysAction(password: string, raw: z.infer<typeof a
 }
 
 export async function clearAiKeysAction(password: string) {
+  await requireUser();
   await assertPassword(password);
   await clearAiKeys();
   revalidatePath("/settings");

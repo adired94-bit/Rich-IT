@@ -1,6 +1,7 @@
 import { getWorkOrderByApprovalToken } from "@/server/queries/work-orders";
 import { getCompanySettings } from "@/server/queries/settings";
 import { ApprovalView } from "@/features/approval/approval-view";
+import { toPublicWorkOrder } from "@/features/approval/public-work-order";
 import type { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -23,5 +24,5 @@ export default async function ApprovePage({ params }: { params: Promise<{ token:
     );
   }
 
-  return <ApprovalView workOrder={workOrder} token={token} companyName={company.name} />;
+  return <ApprovalView workOrder={toPublicWorkOrder(workOrder)} token={token} companyName={company.name} />;
 }

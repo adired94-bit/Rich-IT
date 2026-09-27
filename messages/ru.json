@@ -135,8 +135,18 @@
     "tags": "Теги",
     "searchPlaceholder": "Поиск по названию, контакту, телефону...",
     "count": "{count, plural, =0 {Нет клиентов} one {# клиент} few {# клиента} other {# клиентов}}",
-    "statuses": { "active": "Активен", "inactive": "Неактивен", "lead": "Лид" },
-    "slaLevels": { "none": "Нет", "basic": "Базовый", "standard": "Стандарт", "premium": "Премиум", "enterprise": "Корпоративный" },
+    "statuses": {
+      "active": "Активен",
+      "inactive": "Неактивен",
+      "lead": "Лид"
+    },
+    "slaLevels": {
+      "none": "Нет",
+      "basic": "Базовый",
+      "standard": "Стандарт",
+      "premium": "Премиум",
+      "enterprise": "Корпоративный"
+    },
     "tabs": {
       "overview": "Обзор",
       "history": "История",
@@ -326,7 +336,12 @@
     "addItem": "Добавить строку",
     "addFromCatalog": "Добавить из прайс-листа",
     "itemType": "Тип",
-    "itemTypes": { "service": "Услуга", "hardware": "Оборудование", "labor": "Работа", "discount": "Скидка" },
+    "itemTypes": {
+      "service": "Услуга",
+      "hardware": "Оборудование",
+      "labor": "Работа",
+      "discount": "Скидка"
+    },
     "timeSpent": "Затраченное время",
     "performer": "Исполнитель",
     "language": "Язык документа",
@@ -379,7 +394,9 @@
     "paidAt": "Оплачено {date}",
     "paidFolder": "Оплаченные",
     "paidFolderSubtitle": "Выполненные и оплаченные акты работ",
-    "opsStatus": "Операционный статус"
+    "opsStatus": "Операционный статус",
+    "lockedSigned": "Документ подписан клиентом и закрыт для редактирования — подпись подтверждает именно это содержание. Для изменений создайте новый акт.",
+    "lockedCancelled": "Акт отменён и закрыт для редактирования."
   },
   "voice": {
     "record": "Запись",

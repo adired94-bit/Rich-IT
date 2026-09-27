@@ -135,8 +135,18 @@
     "tags": "תגיות",
     "searchPlaceholder": "חיפוש לפי שם, איש קשר, טלפון...",
     "count": "{count, plural, =0 {אין לקוחות} one {לקוח אחד} other {# לקוחות}}",
-    "statuses": { "active": "פעיל", "inactive": "לא פעיל", "lead": "ליד" },
-    "slaLevels": { "none": "ללא", "basic": "בסיסי", "standard": "סטנדרט", "premium": "פרימיום", "enterprise": "ארגוני" },
+    "statuses": {
+      "active": "פעיל",
+      "inactive": "לא פעיל",
+      "lead": "ליד"
+    },
+    "slaLevels": {
+      "none": "ללא",
+      "basic": "בסיסי",
+      "standard": "סטנדרט",
+      "premium": "פרימיום",
+      "enterprise": "ארגוני"
+    },
     "tabs": {
       "overview": "סקירה",
       "history": "היסטוריה",
@@ -326,7 +336,12 @@
     "addItem": "הוספת שורה",
     "addFromCatalog": "הוספה מהמחירון",
     "itemType": "סוג",
-    "itemTypes": { "service": "שירות", "hardware": "חומרה / ציוד", "labor": "עבודה", "discount": "הנחה" },
+    "itemTypes": {
+      "service": "שירות",
+      "hardware": "חומרה / ציוד",
+      "labor": "עבודה",
+      "discount": "הנחה"
+    },
     "timeSpent": "זמן עבודה",
     "performer": "מבצע",
     "language": "שפת המסמך",
@@ -379,7 +394,9 @@
     "paidAt": "שולם ב-{date}",
     "paidFolder": "שולמו",
     "paidFolderSubtitle": "דפי שירות שבוצעו ושולמו",
-    "opsStatus": "סטטוס תפעולי"
+    "opsStatus": "סטטוס תפעולי",
+    "lockedSigned": "המסמך נחתם על ידי הלקוח ולכן נעול לעריכה — החתימה מאשרת את התוכן הזה בדיוק. לשינויים, צרו דף שירות חדש.",
+    "lockedCancelled": "דף השירות בוטל ולכן נעול לעריכה."
   },
   "voice": {
     "record": "הקלטה",

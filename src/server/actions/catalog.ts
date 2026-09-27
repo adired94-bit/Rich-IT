@@ -1,5 +1,6 @@
 "use server";
 
+import { requireUser } from "@/lib/supabase/server";
 import { db } from "@/db";
 import { services } from "@/db/schema";
 import { seedServices } from "@/db/seed-data";
@@ -9,6 +10,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 export async function fetchActiveServicesAction() {
+  await requireUser();
   return listActiveServices();
 }
 
@@ -21,6 +23,7 @@ function toKeywordsArray(input: string[] | string): string[] {
 }
 
 export async function upsertServiceAction(raw: ServiceFormValues) {
+  await requireUser();
   const data = serviceFormSchema.parse(raw);
   const values = {
     category: data.category,
@@ -48,18 +51,21 @@ export async function upsertServiceAction(raw: ServiceFormValues) {
 }
 
 export async function deleteServiceAction(id: string) {
+  await requireUser();
   await db.delete(services).where(eq(services.id, id));
   revalidatePath("/catalog");
   return { ok: true as const };
 }
 
 export async function toggleServiceActiveAction(id: string, active: boolean) {
+  await requireUser();
   await db.update(services).set({ active }).where(eq(services.id, id));
   revalidatePath("/catalog");
   return { ok: true as const };
 }
 
 export async function duplicateServiceAction(id: string) {
+  await requireUser();
   const original = await db.query.services.findFirst({ where: eq(services.id, id) });
   if (!original) throw new Error("Service not found");
   const { id: _id, createdAt: _c, updatedAt: _u, sku, ...rest } = original;
@@ -68,7 +74,7 @@ export async function duplicateServiceAction(id: string) {
   void _u;
   await db.insert(services).values({
     ...rest,
-    sku: sku ? `${sku}-copy` : null,
+    sku: sku ? `${sku}-copy-${Date.now().toString(36)}` : null,
     titleHe: `${original.titleHe} (עותק)`,
     titleRu: `${original.titleRu} (копия)`,
   });
@@ -77,6 +83,7 @@ export async function duplicateServiceAction(id: string) {
 }
 
 export async function seedCatalogAction() {
+  await requireUser();
   let inserted = 0;
   for (const [i, s] of seedServices.entries()) {
     const res = await db
@@ -92,6 +99,7 @@ export async function seedCatalogAction() {
 }
 
 export async function reorderServicesAction(orderedIds: string[]) {
+  await requireUser();
   await Promise.all(
     orderedIds.map((id, index) =>
       db.update(services).set({ sortOrder: index }).where(eq(services.id, id)),

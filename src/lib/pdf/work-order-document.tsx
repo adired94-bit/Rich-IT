@@ -61,7 +61,7 @@ function fmtMoney(n: number, lang: "he" | "ru") {
   return new Intl.NumberFormat(lang === "ru" ? "ru-RU" : "he-IL", { style: "currency", currency: "ILS", maximumFractionDigits: n % 1 === 0 ? 0 : 2 }).format(n);
 }
 function fmtDate(d: Date | string, lang: "he" | "ru") {
-  return new Intl.DateTimeFormat(lang === "ru" ? "ru-RU" : "he-IL", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(d));
+  return new Intl.DateTimeFormat(lang === "ru" ? "ru-RU" : "he-IL", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Asia/Jerusalem" }).format(new Date(d));
 }
 
 const LABELS = DOC_LABELS;

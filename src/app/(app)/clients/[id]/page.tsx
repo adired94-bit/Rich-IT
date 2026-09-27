@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { isUuid } from "@/lib/uuid";
 import {
   getClient,
   listVaultEntries,
@@ -12,6 +13,7 @@ import { ClientDetailView } from "@/features/clients/client-detail-view";
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const client = await getClient(id);
   if (!client) notFound();
 

@@ -11,9 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { SignaturePad, type SignaturePadHandle } from "./signature-pad";
 import { markWorkOrderViewedAction, signWorkOrderAction } from "@/server/actions/approval";
 import { DOC_LABELS, type DocLang } from "@/lib/pdf/labels";
-import type { getWorkOrderByApprovalToken } from "@/server/queries/work-orders";
+import type { PublicWorkOrder } from "./public-work-order";
 
-type WorkOrderData = NonNullable<Awaited<ReturnType<typeof getWorkOrderByApprovalToken>>>;
+type WorkOrderData = PublicWorkOrder;
 
 const UI = {
   he: {
@@ -36,7 +36,14 @@ function fmtMoney(n: number, lang: DocLang) {
   return new Intl.NumberFormat(lang === "ru" ? "ru-RU" : "he-IL", { style: "currency", currency: "ILS", maximumFractionDigits: n % 1 === 0 ? 0 : 2 }).format(n);
 }
 function fmtDate(d: Date | string, lang: DocLang) {
-  return new Intl.DateTimeFormat(lang === "ru" ? "ru-RU" : "he-IL", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(d));
+  return new Intl.DateTimeFormat(lang === "ru" ? "ru-RU" : "he-IL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Jerusalem",
+  }).format(new Date(d));
 }
 
 export function ApprovalView({ workOrder, token, companyName }: { workOrder: WorkOrderData; token: string; companyName: string }) {
@@ -76,6 +83,11 @@ export function ApprovalView({ workOrder, token, companyName }: { workOrder: Wor
       if (res.ok) {
         setStatus("signed");
         toast.success(t.signed);
+      } else if (res.error === "already_signed") {
+        setStatus("signed");
+        toast.info(t.alreadySigned);
+      } else if (res.error === "cancelled") {
+        setStatus("cancelled");
       } else {
         toast.error(t.notFound);
       }

@@ -67,7 +67,15 @@ export function EventFormDialog({
     e.preventDefault();
     setSaving(true);
     try {
-      await upsertEventAction({ id: event?.id, ...form, clientId: form.clientId || null });
+      // The inputs hold zone-less local wall time ("2026-09-27T10:00"); convert
+      // in the browser, which knows the user's zone — the server runs in UTC.
+      await upsertEventAction({
+        id: event?.id,
+        ...form,
+        startTime: new Date(form.startTime).toISOString(),
+        endTime: new Date(form.endTime).toISOString(),
+        clientId: form.clientId || null,
+      });
       toast.success(tApp("saved"));
       onOpenChange(false);
       onChanged?.();
