@@ -97,23 +97,30 @@ export async function listRecentWorkOrders(limit = 6) {
 }
 
 export async function getMonthlyRevenueTrend(months = 6) {
-  const since = new Date();
-  since.setDate(1);
-  since.setHours(0, 0, 0, 0);
-  since.setMonth(since.getMonth() - (months - 1));
+  // Month buckets follow Israel time, not the server's UTC clock.
+  const ymFmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem", year: "numeric", month: "2-digit" });
+  const [y, m] = ymFmt.format(new Date()).split("-").map(Number);
+  const keys: string[] = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(Date.UTC(y, m - 1 - i, 1));
+    keys.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
+  }
+  // Two days of slack covers the UTC/Israel offset; rows outside the window are dropped below.
+  const since = new Date(Date.UTC(y, m - months, 1) - 2 * 86_400_000);
 
   // Pass an ISO string rather than a raw Date: some serverless runtimes (e.g.
   // Netlify's) fail to serialize a Date instance as a postgres.js query
   // parameter ("Received an instance of Date") in a raw sql`` template.
   const rows = await db.execute<{ month: string; total: number }>(sql`
-    select to_char(date_trunc('month', ${workOrders.signedAt}), 'YYYY-MM') as month,
+    select to_char(date_trunc('month', ${workOrders.signedAt} at time zone 'Asia/Jerusalem'), 'YYYY-MM') as month,
            coalesce(sum(${workOrders.totalAmount}), 0)::float as total
     from ${workOrders}
     where ${workOrders.status} = 'signed' and ${workOrders.signedAt} >= ${since.toISOString()}
     group by 1
     order by 1
   `);
-  return rows;
+  const totals = new Map(Array.from(rows, (r) => [r.month, Number(r.total)]));
+  return keys.map((month) => ({ month, total: totals.get(month) ?? 0 }));
 }
 
 export type WorkOrderItemRow = typeof workOrderItems.$inferSelect;

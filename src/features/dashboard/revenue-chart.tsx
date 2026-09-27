@@ -8,14 +8,14 @@ export function RevenueChart({ data, locale }: { data: { month: string; total: n
   return (
     <div className="flex h-40 items-end gap-2">
       {data.map((d) => {
-        const pct = Math.max(4, Math.round((d.total / max) * 100));
-        const date = new Date(`${d.month}-01T00:00:00`);
+        const pct = d.total > 0 ? Math.max(4, Math.round((d.total / max) * 100)) : 2;
+        const date = new Date(`${d.month}-15T12:00:00Z`);
         return (
           <div key={d.month} className="flex flex-1 flex-col items-center gap-1.5">
             <span className="text-[10px] font-medium text-muted-foreground text-telemetry">
               {d.total > 0 ? formatMoney(d.total, locale).replace(/\s?ILS|₪/, "") : ""}
             </span>
-            <div className="flex w-full flex-1 items-end">
+            <div className="flex h-28 w-full items-end">
               <div
                 className="w-full rounded-t-md bg-gradient-to-t from-primary/40 to-primary shadow-glow"
                 style={{ height: `${pct}%` }}
