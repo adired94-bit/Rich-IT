@@ -515,6 +515,12 @@
     "configured": "מוגדר",
     "missing": "חסר",
     "seedCatalog": "טעינת מחירון ברירת מחדל",
-    "seedCatalogHint": "מוסיף את שש קטגוריות השירות של Rich IT Solutions (לא ימחק שירותים קיימים)."
+    "seedCatalogHint": "מוסיף את שש קטגוריות השירות של Rich IT Solutions (לא ימחק שירותים קיימים).",
+    "backup": "גיבוי נתונים",
+    "backupHint": "הורידו עותק מלא של כל נתוני העסק שלכם בפורמט JSON.",
+    "downloadBackup": "הורדת גיבוי",
+    "backupDownloaded": "הגיבוי ירד",
+    "lastBackup": "גיבוי אחרון: {date}",
+    "neverBacked": "לא בוצע גיבוי עדיין"
   }
 }
