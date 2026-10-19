@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { workOrders, workOrderItems, retainerUsage, interactionLogs, documentEvents } from "@/db/schema";
 import { workOrderFormSchema, computeTotals, type WorkOrderFormValues } from "@/lib/validators/work-orders";
 import { nextWorkOrderNumber } from "@/server/queries/work-orders";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 function nullIfEmpty(v?: string | null) {
@@ -122,8 +122,17 @@ export async function upsertWorkOrderAction(raw: WorkOrderFormValues) {
 
 export async function deleteWorkOrderAction(id: string, clientId?: string) {
   await requireUser();
-  await db.delete(workOrders).where(eq(workOrders.id, id));
+  await db.transaction(async (tx) => {
+    // Hours charged to a retainer for this document go back to the bank, and its
+    // "work order" line leaves the client history; the FKs alone would only null them.
+    await tx.delete(retainerUsage).where(eq(retainerUsage.workOrderId, id));
+    await tx.delete(interactionLogs).where(and(eq(interactionLogs.workOrderId, id), eq(interactionLogs.type, "work_order")));
+    await tx.delete(workOrders).where(eq(workOrders.id, id));
+  });
   revalidatePath("/work-orders");
+  revalidatePath("/work-orders/paid");
+  revalidatePath("/retainers");
+  revalidatePath("/");
   if (clientId) revalidatePath(`/clients/${clientId}`);
   return { ok: true as const };
 }

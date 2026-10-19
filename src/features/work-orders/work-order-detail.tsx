@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { toast } from "sonner";
-import { ArrowRight, Send, Ban, Download, MessageCircle, Link2, FileCheck2, FileClock, FilePlus, FileX, Eye, CheckCircle2, Circle, DollarSign, CircleAlert } from "lucide-react";
+import { ArrowRight, Send, Ban, Download, MessageCircle, Link2, FileCheck2, FileClock, FilePlus, FileX, Eye, CheckCircle2, Circle, DollarSign, CircleAlert, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { WorkOrderEditor } from "./work-order-editor";
-import { cancelWorkOrderAction, markWorkOrderSentAction, toggleWorkOrderCompletedAction, toggleWorkOrderPaidAction } from "@/server/actions/work-orders";
+import { cancelWorkOrderAction, deleteWorkOrderAction, markWorkOrderSentAction, toggleWorkOrderCompletedAction, toggleWorkOrderPaidAction } from "@/server/actions/work-orders";
 import { formatDateTime, formatMoney, toWhatsAppNumber } from "@/lib/utils";
 import type { CompanySettings } from "@/server/queries/settings";
 import type { getWorkOrder, listDocumentEvents } from "@/server/queries/work-orders";
@@ -62,6 +62,8 @@ export function WorkOrderDetail({
   };
   const router = useRouter();
   const [cancelOpen, setCancelOpen] = React.useState(false);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
   const whatsappNumber = toWhatsAppNumber(workOrder.client.phone);
 
   // Light polling while the ball is in the client's court, so "viewed"/"signed" show up without a manual refresh.
@@ -89,6 +91,19 @@ export function WorkOrderDetail({
       router.refresh();
     } catch {
       toast.error(tApp("error"));
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await deleteWorkOrderAction(workOrder.id, workOrder.client.id);
+      toast.success(tApp("deleted"));
+      router.push("/work-orders");
+      router.refresh();
+    } catch {
+      toast.error(tApp("error"));
+      setDeleting(false);
     }
   }
 
@@ -180,6 +195,9 @@ export function WorkOrderDetail({
               <Ban className="h-4 w-4" /> {t("cancel")}
             </Button>
           )}
+          <Button size="sm" variant="ghost" className="gap-1.5 text-destructive" onClick={() => setDeleteOpen(true)}>
+            <Trash2 className="h-4 w-4" /> {t("delete")}
+          </Button>
         </div>
       </div>
 
@@ -255,6 +273,30 @@ export function WorkOrderDetail({
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("deleteTitle", { number: workOrder.number })}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {workOrder.status === "signed" ? t("deleteSignedWarning") : t("deleteWarning")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{tApp("cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              className="bg-destructive text-white hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDelete();
+              }}
+            >
+              {t("delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
         <AlertDialogContent>
