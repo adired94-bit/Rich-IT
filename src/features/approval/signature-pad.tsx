@@ -12,6 +12,33 @@ export interface SignaturePadHandle {
 export const SignaturePad = React.forwardRef<SignaturePadHandle, { label: string; clearLabel: string }>(
   ({ label, clearLabel }, ref) => {
     const padRef = React.useRef<SignatureCanvas>(null);
+    const lastWidthRef = React.useRef(0);
+
+    // The library's default clearOnResize wipes the pad on every window resize.
+    // On iPhone, Safari's toolbar collapsing while the signer scrolls down to the
+    // "sign" button fires a resize, so the signature vanished before submit.
+    // Only re-fit the canvas when its width really changes (rotation), and keep
+    // the strokes when we do.
+    React.useEffect(() => {
+      const canvas = padRef.current?.getCanvas();
+      if (canvas) lastWidthRef.current = canvas.offsetWidth;
+      function handleResize() {
+        const pad = padRef.current;
+        if (!pad) return;
+        const el = pad.getCanvas();
+        if (el.offsetWidth === lastWidthRef.current || el.offsetWidth === 0) return;
+        lastWidthRef.current = el.offsetWidth;
+        const strokes = pad.toData();
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        el.width = el.offsetWidth * ratio;
+        el.height = el.offsetHeight * ratio;
+        el.getContext("2d")?.scale(ratio, ratio);
+        pad.clear();
+        if (strokes.length) pad.fromData(strokes);
+      }
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
     React.useImperativeHandle(ref, () => ({
       getDataUrl: () => {
@@ -36,6 +63,7 @@ export const SignaturePad = React.forwardRef<SignaturePadHandle, { label: string
           <SignatureCanvas
             ref={padRef}
             penColor="#0b1220"
+            clearOnResize={false}
             canvasProps={{ className: "w-full h-40 touch-none" }}
           />
         </div>
